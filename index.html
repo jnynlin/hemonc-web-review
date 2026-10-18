@@ -68,6 +68,8 @@ section.sec{background:var(--surface);border:1px solid var(--line);border-radius
 textarea.note{width:100%;font:inherit;font-size:15px;border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--surface);color:var(--ink);min-height:44px;resize:vertical}
 .resp{font-size:14px;border-left:3px solid var(--line);padding-left:10px;color:var(--muted)}
 .resp.obj{border-left-color:var(--obj);color:var(--ink)}
+.resp.reply{border-left-color:var(--accent);color:var(--ink);background:var(--surface2);padding:4px 10px;border-radius:0 4px 4px 0}
+.btn.reply{color:var(--accent);font-size:13px;padding:7px 10px}
 .names{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .name{font:inherit;font-size:16px;font-weight:500;border:1.5px solid transparent;border-radius:8px;padding:10px 6px;background:var(--wait-bg);color:var(--muted);cursor:pointer;text-align:center;display:grid;gap:2px;position:relative;transition:background .15s,color .15s,border-color .15s}
 .name:hover{border-color:var(--accent);color:var(--ink)}
@@ -130,7 +132,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
       <section class="sec" id="names-sec">
         <div class="shead"><h2>全科同仁已閱確認</h2><span class="r" id="names-count"></span></div>
         <div style="padding:12px 16px;display:grid;gap:10px">
-          <div class="r" style="font-size:14px;color:var(--muted)">兩種回應擇一:看完都同意,點自己的名字(變綠);有地方要改,在那一條按「有異議」寫一句,名字會自動變橘,不用再點。等主負責人改好或回覆後,你同意了再點名字,橘就轉綠。</div>
+          <div class="r" style="font-size:14px;color:var(--muted)">兩種回應擇一:看完都同意,點自己的名字(變綠);有地方要改,在那一條按「有異議」寫一句,名字會自動變橘,不用再點。主負責人的回覆會出現在那一條下方;你同意了再點名字,橘就轉綠。</div>
           <div class="legend"><span class="l-wait"><i></i>尚未回應</span><span class="l-ok"><i></i>已閱、同意刊登</span><span class="l-obj"><i></i>已閱、有異議待處理</span><span class="l-lead"><i></i>主負責人</span></div>
           <div class="names" id="names"></div>
           <div class="other"><a href="#" id="otherlink" style="color:var(--accent);font-size:14px">名單沒有你?</a><span id="otherwrap" hidden><input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">已閱</button></span></div>
@@ -218,6 +220,7 @@ function renderStatic(){
         ${it.id==="k45"?`<button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" data-provide="1" id="ok-${it.id}">提供數字</button>`:`<button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" id="ok-${it.id}">✓ 確認無誤</button><button class="btn sm other-ok" type="button" data-id="${it.id}" id="oth-${it.id}" title="非主負責人代為確認" hidden>其他人確認</button>`}
         <button class="btn sm obj" type="button" data-id="${it.id}" data-s="objection">✗ 有異議</button>
         <span class="tally" id="tl-${it.id}"></span>
+        <button class="btn sm reply" type="button" data-id="${it.id}" id="rp-${it.id}" hidden>回覆異議</button>
       </div>
       <div class="who" id="who-${it.id}" hidden></div>
       <textarea class="note" id="nt-${it.id}" placeholder="寫一句:哪裡要改、改成什麼,然後再按一次「有異議」送出" hidden></textarea>
@@ -227,6 +230,12 @@ function renderStatic(){
     const b=e.target.closest("button.btn"); if(!b||b.disabled) return;
     const id=b.dataset.id, s=b.dataset.s, it=ALL.find(x=>x.id===id), ta=document.getElementById("nt-"+id), who=document.getElementById("who-"+id);
     if(b.classList.contains("other-ok")){ who.hidden=false; who.innerHTML=whoPicker(id,true); const inp=document.getElementById("whosel-"+id); inp.value=""; inp.focus(); const okb=document.getElementById("ok-"+id); okb.textContent="✓ 以上方姓名送出確認"; okb.dataset.other="1"; return; }
+    if(b.classList.contains("reply")){
+      if(who.hidden){ const lead0=leadOf(it.sec); who.hidden=false; who.innerHTML=`<div class="src" style="margin-bottom:4px">主負責人回覆:說明已改成什麼、或為何維持原文。回覆會顯示在異議下方。</div><div>回覆人:<input id="whosel-${id}" list="roster-list" value="${esc(lead0)}" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"></div>`; ta.hidden=false; ta.placeholder="例:已改為「…」;或:維持原文,因為…"; ta.focus(); b.textContent="送出回覆"; return; }
+      const sel=document.getElementById("whosel-"+id); const name=(sel&&sel.value.trim())||""; const note=ta.value.trim();
+      if(!name){ banner("請填回覆人姓名。",false); return; } if(!note){ banner("請寫回覆內容。",false); ta.focus(); return; }
+      await submit(id,"ok",note,name,"回覆",b); ta.value=""; ta.hidden=true; who.hidden=true; b.textContent="回覆異議"; return;
+    }
     if(b.dataset.provide){
       if(who.hidden){ who.hidden=false; who.innerHTML=`<div class="src" style="margin-bottom:4px">提供人(限 4-5 點名者):</div><div>姓名:<select id="whosel-${id}" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink)"><option value="">請選擇</option><option>陳姿婷</option><option>葉士芃</option><option>白禮源</option><option>郭晉廷</option></select> 在下方框填數字,再按一次「送出數字」。</div>`; ta.hidden=false; ta.placeholder="例:2023/2024/2025 年移植 xx/xx/xx 例;一年整體存活率 xx%;進行中試驗 xx 件;SNQ xxxx 年 銀獎"; ta.focus(); b.textContent="送出數字"; return; }
       const sel=document.getElementById("whosel-"+id); const name=(sel&&sel.value.trim())||""; const note=ta.value.trim();
@@ -239,8 +248,9 @@ function renderStatic(){
       if(lead0){ await submit(id,"ok","",lead0,"主負責人",b); return; }   // one click for the named lead
       who.hidden=false; who.innerHTML=whoPicker(id,true); return;
     }
-    const sel=document.getElementById("whosel-"+id); const name=(sel&&sel.value.trim())||"";
-    if(!name){ banner("請先選或填確認人姓名。",false); return; }
+    const sel=document.getElementById("whosel-"+id); let name=(sel&&sel.value.trim())||"";
+    if(name==="__other"){ const o=document.getElementById("whoother-"+id); name=(o&&o.value.trim())||""; }
+    if(!name){ banner("請先選或填姓名。",false); return; }
     const lead=leadOf(it.sec); const role= name===lead ? "主負責人" : "同仁";
     const note=s==="objection"?ta.value.trim():"";
     if(s==="objection" && !note){ banner("請先寫一句異議內容。",false); ta.focus(); return; }
@@ -269,6 +279,9 @@ function whoPicker(id,isOk){
   if(isOk&&item.authors&&item.authors.length){
     return `${hint}<div>列名作者(限本篇本科作者):<select id="whosel-${id}" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink)"><option value="">請選擇</option>${item.authors.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("")}</select> 然後再按一次按鈕送出。</div>`;
   }
+  if(!isOk){
+    return `<div>異議人:<select id="whosel-${id}" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;background:var(--surface);color:var(--ink)" onchange="var o=document.getElementById('whoother-${id}'); if(o){o.hidden=this.value!=='__other';}"><option value="">請選擇</option>${cfg.roster.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("")}<option value="__other">其他(手動輸入)</option></select> <input id="whoother-${id}" placeholder="姓名" autocomplete="off" hidden style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:120px;background:var(--surface);color:var(--ink)"> 寫好下方那句後再按一次「有異議」送出。</div>`;
+  }
   return `${hint}<div>${isOk?"確認人":"異議人"}:<input id="whosel-${id}" list="roster-list" value="${esc(lead)}" placeholder="姓名" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"> ${lead?`<span class="leadtag">主負責人 ${esc(lead)}</span>`:""} 然後再按一次按鈕送出。</div>`;
 }
 async function submit(item,state,note,name,role,btn){
@@ -293,16 +306,18 @@ function renderState(){
   let okItems=0,objItems=0; const objList=[]; const secStat={};
   for(const it of ALL){
     const list=byItem[it.id]||[]; const lead=leadOf(it.sec);
-    const leadOk=list.some(r=>r.state==="ok"&&(!lead||r.name===lead));
-    const nOk=list.filter(r=>r.state==="ok").length, nObj=list.filter(r=>r.state==="objection").length;
+    const leadOk=list.some(r=>r.state==="ok"&&r.role!=="回覆"&&r.role!=="數字提供"&&(!lead||r.name===lead));
+    const replies=list.filter(r=>r.state==="ok"&&r.role==="回覆");
+    const nOk=list.filter(r=>r.state==="ok"&&r.role!=="回覆"&&r.role!=="數字提供").length, nObj=list.filter(r=>r.state==="objection").length;
+    const rpb=document.getElementById("rp-"+it.id); if(rpb){ rpb.hidden=!nObj; }
     if(nObj){ objItems++; list.filter(r=>r.state==="objection").forEach(r=>objList.push({it,r})); } else if(leadOk) okItems++;
     secStat[it.sec]=secStat[it.sec]||{n:0,ok:0,obj:0}; secStat[it.sec].n++; if(leadOk&&!nObj) secStat[it.sec].ok++; if(nObj) secStat[it.sec].obj++;
     const okb=document.getElementById("ok-"+it.id); if(it.id!=="k45"){ okb.classList.toggle("done",leadOk&&!nObj); if(lead){ okb.textContent= leadOk ? `✓ ${lead} 已確認` : `✓ ${lead} 確認無誤`; } } else { okb.classList.toggle("done",nOk>0); }
-    document.getElementById("tl-"+it.id).innerHTML=(nOk?`<span class="chip ok">確認 ${nOk}</span>`:"")+(nObj?`<span class="chip obj">異議 ${nObj}</span>`:"")+(!nOk&&!nObj?`<span class="chip">尚無回應</span>`:"");
+    document.getElementById("tl-"+it.id).innerHTML=(nOk?`<span class="chip ok">確認 ${nOk}</span>`:"")+(nObj?`<span class="chip obj">異議 ${nObj}${replies.length?` · 已回覆 ${replies.length}`:""}</span>`:"")+(!nOk&&!nObj&&!replies.length?`<span class="chip">尚無回應</span>`:"");
     const rs=document.getElementById("rs-"+it.id); rs.innerHTML="";
     const objs=list.filter(r=>r.state==="objection"), oks=list.filter(r=>r.state!=="objection");
     const showAll=rs.dataset.all==="1"; const okShow= showAll? oks : oks.slice(-3);
-    for(const r of [...objs,...okShow]){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?(r.role==="數字提供"?"提供數字":"確認無誤"):"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
+    for(const r of [...objs,...okShow]){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.className+= r.role==="回覆"?" reply":""; d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?(r.role==="數字提供"?"提供數字":r.role==="回覆"?"回覆":"確認無誤"):"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
     if(oks.length>3){ const t=document.createElement("button"); t.type="button"; t.className="btn sm more"; t.textContent= showAll? "收合確認紀錄" : `顯示全部 ${oks.length} 筆確認`; t.addEventListener("click",()=>{ rs.dataset.all= showAll?"0":"1"; renderState(); }); rs.appendChild(t); }
   }
   const roster=cfg.roster; const leads=new Set(Object.values(cfg.lead||{}).filter(Boolean));
