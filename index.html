@@ -95,7 +95,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     <p class="sub">10/21(三)中午前未表示異議的項目,視為同意刊登。今天 <span id="today" class="num"></span></p>
   </header>
 
-  <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段的「確認無誤」按鈕已帶主負責人姓名,主負責人逐項按一下即可;要異議就按「有異議」寫一句。非主負責人也想對某項表示確認,按「其他人確認」填自己的名字;這會記為「同仁確認」,不會取代主負責人的確認。右半部是全科同仁名單,看完後點自己的名字一次,即記錄「已閱,同意刊登」。不用登入。</div>
+  <div class="card how" id="how"><b>給全科同仁</b>:這一頁集合了血液腫瘤科這幾年一起累積的成績:造血幹細胞移植、細胞治療、臨床試驗,以及各癌別團隊的照護與研究,每一句都附公開來源。請各位花一分鐘看看自己參與過的部分:主負責人逐項按「確認無誤」,其他同仁點右側自己的名字,記錄已閱、同意刊登。這份官網特色介紹將以全科的名義對外呈現,有任何想補強或修正的地方,按「有異議」寫一句即可。</div>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -262,7 +262,7 @@ async function submit(item,state,note,name,role,btn){
 function renderConfig(){
   for(const s of SECS){ const l=leadOf(s.id); document.getElementById("lead-"+s.id).innerHTML= l?`<span class="leadtag">主負責人 ${esc(l)}</span>`:`<span class="r">主負責人待指定</span>`;
     for(const it of s.items){ const b=document.getElementById("ok-"+it.id); const o=document.getElementById("oth-"+it.id); if(b){ b.textContent= l?`✓ ${l} 確認無誤`:"✓ 確認無誤"; } if(o){ o.hidden=!l; } } }
-  if(cfg.leadNote){ document.getElementById("how").innerHTML=`<b>怎麼用</b>:${esc(cfg.leadNote)}`; }
+  if(cfg.leadNote){ document.getElementById("how").innerHTML=`<b>給全科同仁</b>:${esc(cfg.leadNote)}`; }
   let dl=document.getElementById("roster-list"); if(!dl){ dl=document.createElement("datalist"); dl.id="roster-list"; document.body.appendChild(dl); }
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
 }
