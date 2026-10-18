@@ -112,7 +112,7 @@ textarea.note{width:100%;font:inherit;font-size:15px;border:1px solid var(--line
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const PAGE="hemonc-feature-2026";
 const DEADLINE="2026-10-21T12:00:00+08:00";
@@ -229,8 +229,8 @@ renderStatic(); renderState();
 try{
   const app=initializeApp({apiKey:"AIzaSyB12T-DIgrwzPQQJjF3SvkjKnRYy0CxTd8",authDomain:"assistant-hub-cmuh.firebaseapp.com",projectId:"assistant-hub-cmuh",appId:"1:704995456524:web:111c2db8d85a073c8f2029"});
   db=getFirestore(app);
-  onSnapshot(query(collection(db,"web_review"),where("page","==",PAGE),orderBy("ts","asc")),snap=>{
-    rows=snap.docs.map(d=>d.data()); renderState();
+  onSnapshot(query(collection(db,"web_review"),orderBy("ts","asc")),snap=>{
+    rows=snap.docs.map(d=>d.data()).filter(r=>r.page===PAGE); renderState();
   },err=>{ banner("讀取回應失敗:"+(err.code||err.message)+"。可照常閱讀內容;有意見請回信。",false); });
 }catch(e){ banner("資料庫未載入,可照常閱讀內容;有意見請回信。",false); }
 </script>
