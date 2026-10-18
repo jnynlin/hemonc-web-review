@@ -36,13 +36,13 @@ h3{font-size:16px;margin:0 0 6px;font-weight:700}
 .banner.ok{background:var(--ok-bg)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;box-shadow:var(--shadow)}
-.stat .lab{font-size:13px;color:var(--muted)} .stat .val{font-size:26px;font-weight:700;line-height:1.1}
+.stat .lab{font-size:13px;color:var(--muted)} .stat .val{font-size:clamp(19px,5.5vw,26px);font-weight:700;line-height:1.1;white-space:nowrap}
 .stat.dl .val{color:var(--accent)}
 .cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.cols{grid-template-columns:1fr}}
 .left{display:grid;gap:14px;min-width:0}
 .right{display:grid;gap:14px;position:sticky;top:12px}
-@media (max-width:900px){.right{position:static}}
+@media (max-width:900px){.right{position:static;display:contents}.right>section:first-of-type{order:-1}.right>section:last-of-type{order:2}.left{order:1}}
 section.sec{background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
 .shead{padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
 .shead .r{font-size:13px;color:var(--muted)}
@@ -99,6 +99,8 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
 .before{font-size:14px;color:var(--muted);background:var(--surface2);border-left:3px solid var(--line);padding:8px 10px;border-radius:4px}
 .before .blab{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;margin-right:6px;color:var(--ink)}
 .src a{color:var(--accent)}
+.jump{display:none}
+@media (max-width:900px){.jump{display:block;position:sticky;bottom:12px;text-align:right;pointer-events:none}.jump a{pointer-events:auto;display:inline-block;background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:700;padding:8px 12px;border-radius:20px;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}}
 .foot{color:var(--muted);font-size:14px}
 </style>
 </head>
@@ -125,7 +127,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     <div class="left" id="secs"></div>
 
     <aside class="right">
-      <section class="sec">
+      <section class="sec" id="names-sec">
         <div class="shead"><h2>全科同仁已閱確認</h2><span class="r" id="names-count"></span></div>
         <div style="padding:12px 16px;display:grid;gap:10px">
           <div class="r" style="font-size:14px;color:var(--muted)">兩種回應擇一:看完都同意,點自己的名字(變綠);有地方要改,在那一條按「有異議」寫一句,名字會自動變橘,不用再點。等主負責人改好或回覆後,你同意了再點名字,橘就轉綠。</div>
@@ -145,6 +147,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     </aside>
   </div>
 
+  <div class="jump" id="jump"><a href="#names-sec">↑ 回到名字格</a></div>
   <p class="foot">本頁記錄姓名、身分、時間與回應內容,不記錄其他個人資料;回應只能新增不能修改,寫錯請再新增一筆說明。主負責人與名單由科內後台設定檔決定。</p>
 </div>
 
