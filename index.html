@@ -89,13 +89,13 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     <p class="sub">10/21(三)中午前未表示異議的項目,視為同意刊登。今天 <span id="today" class="num"></span></p>
   </header>
 
-  <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段標示主負責人,由主負責人逐項按「確認無誤」或「有異議」。右半部是全科同仁名單,看完後點自己的名字一次即完成背書。不用登入。</div>
+  <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段標示主負責人,由主負責人逐項按「確認無誤」或「有異議」。右半部是全科同仁名單,看完後點自己的名字一次,即記錄「已閱,同意刊登」。不用登入。</div>
 
   <div id="banner" class="banner" hidden></div>
 
   <div class="stats">
     <div class="stat dl"><div class="lab">距異議截止</div><div class="val num" id="dl">—</div></div>
-    <div class="stat"><div class="lab">已背書</div><div class="val num" id="s-end">0 / 0</div></div>
+    <div class="stat"><div class="lab">已閱確認</div><div class="val num" id="s-end">0 / 0</div></div>
     <div class="stat"><div class="lab">主負責人已確認項目</div><div class="val num" id="s-ok">0 / 0</div></div>
     <div class="stat"><div class="lab">有異議的項目</div><div class="val num" id="s-obj">0</div></div>
   </div>
@@ -105,10 +105,10 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
 
     <aside class="right">
       <section class="sec">
-        <div class="shead"><h2>全科同仁背書</h2><span class="r">點自己的名字</span></div>
+        <div class="shead"><h2>全科同仁已閱確認</h2><span class="r">點自己的名字</span></div>
         <div style="padding:12px 16px;display:grid;gap:12px">
           <div class="names" id="names"></div>
-          <div class="other">名單沒有你:<input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">背書</button></div>
+          <div class="other">名單沒有你:<input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">已閱</button></div>
           <div class="confirm" id="confirm" hidden>
             <div id="confirm-text"></div>
             <div class="row"><button class="btn primary sm" id="confirm-yes" type="button">是,本人已閱,同意刊登</button><button class="btn sm" id="confirm-no" type="button">取消</button></div>
@@ -119,7 +119,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
       <section class="sec">
         <div class="shead"><h2>統計</h2><button class="btn sm" id="csv" type="button">匯出 CSV</button></div>
         <div style="padding:12px 16px;display:grid;gap:12px">
-          <div><h3>尚未背書</h3><div id="st-pending" class="pending">—</div></div>
+          <div><h3>尚未確認已閱</h3><div id="st-pending" class="pending">—</div></div>
           <div><h3>異議清單</h3><div id="st-obj" class="pending">—</div></div>
           <div><h3>各段確認狀況</h3><table class="stat" id="st-sec"></table></div>
         </div>
@@ -231,7 +231,7 @@ function whoPicker(id,isOk){
 function askEndorse(name){
   const already=rows.some(r=>r.item==="all"&&r.state==="endorse"&&r.name===name);
   pendingName=name;
-  document.getElementById("confirm-text").textContent= already ? `${name} 已背書過。要再記錄一次嗎?` : `以「${name}」的名義記錄:本人已閱上列刊登內容,同意刊登。`;
+  document.getElementById("confirm-text").textContent= already ? `${name} 已確認過。要再記錄一次嗎?` : `以「${name}」的名義記錄:本人已閱上列刊登內容,同意刊登。`;
   document.getElementById("confirm").hidden=false;
   document.getElementById("confirm").scrollIntoView({block:"nearest"});
 }
@@ -240,7 +240,7 @@ async function submit(item,state,note,name,role,btn){
   btn.disabled=true;
   try{
     await addDoc(collection(db,"web_review"),{page:PAGE,item,name,role,state,note,ts:serverTimestamp()});
-    banner(state==="endorse"?`已記錄:${name} 背書。`:`已記錄:${name} 對 ${item} 的回應。`,true);
+    banner(state==="endorse"?`已記錄:${name} 已閱。`:`已記錄:${name} 對 ${item} 的回應。`,true);
   }catch(err){ banner("送出失敗:"+(err.code||err.message)+"。若在院內網路受限,請改回信。",false); }
   btn.disabled=false;
 }
@@ -266,13 +266,13 @@ function renderState(){
     for(const r of list){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?"確認無誤":"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
   }
   const roster=cfg.roster; const leads=new Set(Object.values(cfg.lead||{}).filter(Boolean));
-  document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); return `<button class="name ${e?"done":""} ${leads.has(n)?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"已背書 "+fmt(e.ts):(leads.has(n)?"主負責人":"點我背書")}</small></button>`; }).join("");
+  document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); return `<button class="name ${e?"done":""} ${leads.has(n)?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"已閱 "+fmt(e.ts):(leads.has(n)?"主負責人":"點我確認已閱")}</small></button>`; }).join("");
   const extra=[...endorsers.keys()].filter(n=>!roster.includes(n));
   document.getElementById("s-end").textContent=`${[...endorsers.keys()].filter(n=>roster.includes(n)).length} / ${roster.length}`+(extra.length?` +${extra.length}`:"");
   document.getElementById("s-ok").textContent=`${okItems} / ${ALL.length}`;
   document.getElementById("s-obj").textContent=objItems;
   const pend=roster.filter(n=>!endorsers.has(n));
-  document.getElementById("st-pending").textContent= pend.length? pend.join("、") : "全員已背書";
+  document.getElementById("st-pending").textContent= pend.length? pend.join("、") : "全員已閱";
   document.getElementById("st-obj").innerHTML= objList.length? objList.map(({it,r})=>`<div class="resp obj">${esc(it.code)} ${esc(r.name)}:${esc(r.note)} · ${fmt(r.ts)}</div>`).join("") : "無";
   document.getElementById("st-sec").innerHTML=`<tr><th>段落</th><th>主負責人</th><th>確認/項目</th><th>異議</th></tr>`+SECS.map(s=>{ const st=secStat[s.id]||{n:s.items.length,ok:0,obj:0}; return `<tr><td>${esc(s.name.split("(")[0])}</td><td>${esc(leadOf(s.id)||"—")}</td><td class="num">${st.ok} / ${st.n}</td><td class="num">${st.obj}</td></tr>`; }).join("");
 }
