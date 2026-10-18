@@ -99,7 +99,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     <p class="sub">10/21(三)中午前未表示異議的項目,視為同意刊登。今天 <span id="today" class="num"></span></p>
   </header>
 
-  <div class="card how" id="how"><b>給全科同仁</b>:這一頁集合了血液腫瘤科這幾年一起累積的成績:造血幹細胞移植、細胞治療、臨床試驗,以及各癌別團隊的照護與研究,每一句都附公開來源。請各位花一分鐘看看自己參與過的部分:主負責人逐項按「確認無誤」,其他同仁點右側自己的名字,記錄已閱、同意刊登。這份官網特色介紹將以全科的名義對外呈現,有任何想補強或修正的地方,按「有異議」寫一句即可。</div>
+  <div class="card how" id="how"><b>給全科同仁</b>:這一頁集合了血液腫瘤科這幾年一起累積的成績:造血幹細胞移植、細胞治療、臨床試驗,以及各癌別團隊的照護與研究,每一句都附公開來源。請各位花一分鐘看看自己參與過的部分:主負責人逐項按「確認無誤」,其他同仁點右側自己的名字,記錄已閱、同意刊登。這份官網特色介紹將以全科的名義對外呈現,有任何想補強或修正的地方,按「有異議」寫一句即可。論文列名者與移植、細胞治療團隊,也可對自己相關的那一條按確認。</div>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -175,6 +175,8 @@ const SECS=[
  ]}
 ];
 const ALL=SECS.flatMap(s=>s.items.map(i=>({...i,sec:s.id})));
+const OTHER_OK_SECS=new Set(["kpi","pub"]);   // only sections where non-leads have standing: trial/transplant teams, listed authors
+const OTHER_OK_HINT={kpi:"移植或細胞治療團隊成員:確認這項數字與寫法無誤。",pub:"列名作者:確認同意刊出,且自己的角色寫法正確。"};
 let cfg={lead:{},roster:DEFAULT_ROSTER,leadNote:""};
 let rows=[]; let db=null; let pendingName=null;
 
@@ -239,7 +241,8 @@ function renderStatic(){
 function whoPicker(id,isOk){
   const lead=leadOf(ALL.find(x=>x.id===id).sec);
   const names=[...new Set([lead,...cfg.roster].filter(Boolean))];
-  return `<div>${isOk?"確認人(非主負責人,記錄為同仁確認)":"異議人"}:<input id="whosel-${id}" list="roster-list" value="${esc(lead)}" placeholder="姓名" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"> ${lead?`<span class="leadtag">主負責人 ${esc(lead)}</span>`:""} 然後再按一次按鈕送出。</div>`;
+  const sec=ALL.find(x=>x.id===id).sec; const hint=isOk&&OTHER_OK_HINT[sec]?`<div class="src" style="margin-bottom:4px">${OTHER_OK_HINT[sec]} 記錄為同仁確認,不取代主負責人。</div>`:"";
+  return `${hint}<div>${isOk?"確認人":"異議人"}:<input id="whosel-${id}" list="roster-list" value="${esc(lead)}" placeholder="姓名" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"> ${lead?`<span class="leadtag">主負責人 ${esc(lead)}</span>`:""} 然後再按一次按鈕送出。</div>`;
 }
 async function submit(item,state,note,name,role,btn){
   if(!db){ banner("尚未連上資料庫,請重新整理後再試。",false); return; }
@@ -251,8 +254,8 @@ async function submit(item,state,note,name,role,btn){
   btn.disabled=false;
 }
 function renderConfig(){
-  for(const s of SECS){ const l=leadOf(s.id); document.getElementById("lead-"+s.id).innerHTML= l?`<span class="leadtag">主負責人 ${esc(l)}</span>`:`<span class="r">主負責人待指定</span>`;
-    for(const it of s.items){ const b=document.getElementById("ok-"+it.id); const o=document.getElementById("oth-"+it.id); if(b){ b.textContent= l?`✓ ${l} 確認無誤`:"✓ 確認無誤"; } if(o){ o.hidden=!l; } } }
+  for(const s of SECS){ const l=leadOf(s.id); document.getElementById("lead-"+s.id).innerHTML= (l?`<span class="leadtag">主負責人 ${esc(l)}</span>`:`<span class="r">主負責人待指定</span>`)+(s.id==="pub"?` <span class="r">列名作者可按「列名作者確認」</span>`:s.id==="kpi"?` <span class="r">移植/細胞治療團隊可按「團隊成員確認」</span>`:"");
+    for(const it of s.items){ const b=document.getElementById("ok-"+it.id); const o=document.getElementById("oth-"+it.id); if(b){ b.textContent= l?`✓ ${l} 確認無誤`:"✓ 確認無誤"; } if(o){ o.hidden=!(l&&OTHER_OK_SECS.has(s.id)); o.textContent= s.id==="pub"?"列名作者確認":"團隊成員確認"; } } }
   if(cfg.leadNote){ document.getElementById("how").innerHTML=`<b>給全科同仁</b>:${esc(cfg.leadNote)}`; }
   let dl=document.getElementById("roster-list"); if(!dl){ dl=document.createElement("datalist"); dl.id="roster-list"; document.body.appendChild(dl); }
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
