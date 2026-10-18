@@ -99,7 +99,6 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
 
   <div id="banner" class="banner" hidden></div>
 
-  <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn sm" id="togglebefore" type="button">顯示更正前後對照(官網現況 → 更新稿)</button><span class="src">每項「來源」後附可點的連結:官網現況頁、PubMed/DOI、新聞與公告。</span></div>
 
   <div class="stats">
     <div class="stat dl"><div class="lab">距異議截止</div><div class="val num" id="dl">—</div></div>
@@ -198,7 +197,6 @@ function renderStatic(){
       <div class="code">${esc(it.code)}</div>
       <div class="txt">${esc(it.txt)}</div>
       <div class="src">來源:${esc(it.src)}${(it.links&&it.links.length)?` · ${it.links.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}`:""}</div>
-      ${it.before?`<div class="before" hidden><span class="blab">官網現況(2026-10-18)</span>${esc(it.before)}</div>`:""}
       <div class="acts">
         <button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" id="ok-${it.id}">✓ 確認無誤</button><button class="btn sm other-ok" type="button" data-id="${it.id}" id="oth-${it.id}" title="非主負責人代為確認" hidden>其他人確認</button>
         <button class="btn sm obj" type="button" data-id="${it.id}" data-s="objection">✗ 有異議</button>
@@ -236,7 +234,6 @@ function renderStatic(){
   document.getElementById("confirm-no").addEventListener("click",()=>{ pendingName=null; document.getElementById("confirm").hidden=true; });
   document.getElementById("confirm-yes").addEventListener("click",async e=>{ if(!pendingName) return; await submit("all","endorse","",pendingName,"同仁",e.currentTarget); pendingName=null; document.getElementById("confirm").hidden=true; });
   document.getElementById("csv").addEventListener("click",exportCsv);
-  document.getElementById("togglebefore").addEventListener("click",e=>{ const els=document.querySelectorAll(".before"); const show=els.length&&els[0].hidden; els.forEach(x=>x.hidden=!show); e.currentTarget.textContent= show?"隱藏更正前後對照":"顯示更正前後對照(官網現況 → 更新稿)"; });
 }
 function whoPicker(id,isOk){
   const lead=leadOf(ALL.find(x=>x.id===id).sec);
