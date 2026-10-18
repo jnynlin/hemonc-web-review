@@ -29,8 +29,9 @@ h3{font-size:16px;margin:0 0 6px;font-weight:700}
 .sub{color:var(--muted);font-size:15px;margin:4px 0 0}
 .num{font-variant-numeric:tabular-nums}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px;box-shadow:var(--shadow)}
-.card.how{border-left:5px solid var(--accent);font-size:15px}
-.card.how b{color:var(--accent)}
+.card.how{border:0;background:linear-gradient(135deg,var(--ok-bg),var(--surface));padding:16px 20px;font-size:16px;line-height:1.75}
+.card.how .eyebrow{display:block;font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--accent);margin-bottom:6px}
+.card.how b{color:var(--ink);background:var(--accent-ink);padding:0 4px;border-radius:4px;box-shadow:inset 0 -2px 0 var(--accent)}
 .banner{background:var(--obj-bg);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:15px}
 .banner.ok{background:var(--ok-bg)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
@@ -99,7 +100,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     <p class="sub">10/21(三)中午前未表示異議的項目,視為同意刊登。今天 <span id="today" class="num"></span></p>
   </header>
 
-  <div class="card how" id="how"><b>給全科同仁</b>:這一頁集合了血液腫瘤科這幾年一起累積的成績:造血幹細胞移植、細胞治療、臨床試驗,以及各癌別團隊的照護與研究,每一句都附公開來源。請各位花一分鐘看看自己參與過的部分:主負責人逐項按「確認無誤」,其他同仁點右側自己的名字,記錄已閱、同意刊登。這份官網特色介紹將以全科的名義對外呈現,有任何想補強或修正的地方,按「有異議」寫一句即可。論文列名者與移植、細胞治療團隊,也可對自己相關的那一條按確認。</div>
+  <div class="card how" id="how"><span class="eyebrow">給全科同仁</span>這一頁集合了血液腫瘤科這幾年一起累積的成績:造血幹細胞移植、細胞治療、臨床試驗,以及各癌別團隊的照護與研究,每一句都附公開來源。請各位花一分鐘看看自己參與過的部分:<b>主負責人逐項按「確認無誤」</b>,<b>其他同仁點右側自己的名字,記錄已閱、同意刊登</b>。這份官網特色介紹將以全科的名義對外呈現;有任何想補強或修正的地方,按「有異議」寫一句即可。論文列名者與移植、細胞治療團隊,也可對自己相關的那一條按確認。</div>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -256,7 +257,7 @@ async function submit(item,state,note,name,role,btn){
 function renderConfig(){
   for(const s of SECS){ const l=leadOf(s.id); document.getElementById("lead-"+s.id).innerHTML= (l?`<span class="leadtag">主負責人 ${esc(l)}</span>`:`<span class="r">主負責人待指定</span>`)+(s.id==="pub"?` <span class="r">列名作者可按「列名作者確認」</span>`:s.id==="kpi"?` <span class="r">移植/細胞治療團隊可按「團隊成員確認」</span>`:"");
     for(const it of s.items){ const b=document.getElementById("ok-"+it.id); const o=document.getElementById("oth-"+it.id); if(b){ b.textContent= l?`✓ ${l} 確認無誤`:"✓ 確認無誤"; } if(o){ o.hidden=!(l&&OTHER_OK_SECS.has(s.id)); o.textContent= s.id==="pub"?"列名作者確認":"團隊成員確認"; } } }
-  if(cfg.leadNote){ document.getElementById("how").innerHTML=`<b>給全科同仁</b>:${esc(cfg.leadNote)}`; }
+  if(cfg.leadNote){ document.getElementById("how").innerHTML=`<span class="eyebrow">給全科同仁</span>${esc(cfg.leadNote).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}`; }
   let dl=document.getElementById("roster-list"); if(!dl){ dl=document.createElement("datalist"); dl.id="roster-list"; document.body.appendChild(dl); }
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
 }
