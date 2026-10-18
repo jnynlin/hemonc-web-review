@@ -56,6 +56,7 @@ section.sec{background:var(--surface);border:1px solid var(--line);border-radius
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.ok{color:var(--ok)} .btn.obj{color:var(--obj)}
 .btn.sm{font-size:14px;padding:7px 12px}
+.btn.more{font-weight:500;color:var(--muted);font-size:13px;padding:5px 10px;margin-top:4px}
 .btn.other-ok{font-weight:500;color:var(--muted);font-size:13px;padding:7px 10px}
 .btn.ok.done{background:var(--ok-bg);border-color:var(--ok)}
 .btn:disabled{opacity:.55;cursor:default}
@@ -171,7 +172,7 @@ const SECS=[
  ]},
  {id:"other",name:"圖片與就醫指引",items:[
   {id:"o7",code:"7",txt:"圖片 10/30 另交。規劃三張:移植病房或細胞處理、多專科團隊討論、臨床試驗中心作業,皆不含病人可辨識資訊。",src:"公關室規格 ≥1280×720,英文頁圖內不得有中文字",before:"現有 1 張 特艾1.png,無圖說、解析度不明",links:[]},
-  {id:"o8",code:"8",txt:"團隊與就醫指引指向官網既有「團隊介紹」「服務項目」頁面,不另寫電話。",src:"官網 depid=60",before:"(散在團隊介紹、服務項目頁;特色頁無)",links:[["團隊介紹","https://www.cmuh.cmu.edu.tw/Department/Team?detail=60&current=11&source=dep"],["服務項目","https://www.cmuh.cmu.edu.tw/Department/ServiceItemList?depid=60"]]}
+  {id:"o8",code:"8",txt:"團隊與就醫指引指向官網既有「團隊介紹」「服務項目」頁面,不另寫電話。",src:"官網 depid=60",before:"(散在團隊介紹、服務項目頁;特色頁無)",links:[["團隊介紹","https://www.cmuh.cmu.edu.tw/Department/Team?detail=60&current=11&source=dep"],["科室首頁","https://www.cmuh.cmu.edu.tw/Department/Detail?depid=60"]]}
  ]}
 ];
 const ALL=SECS.flatMap(s=>s.items.map(i=>({...i,sec:s.id})));
@@ -278,7 +279,10 @@ function renderState(){
     const okb=document.getElementById("ok-"+it.id); okb.classList.toggle("done",leadOk&&!nObj); if(lead){ okb.textContent= leadOk ? `✓ ${lead} 已確認` : `✓ ${lead} 確認無誤`; }
     document.getElementById("tl-"+it.id).innerHTML=(nOk?`<span class="chip ok">確認 ${nOk}</span>`:"")+(nObj?`<span class="chip obj">異議 ${nObj}</span>`:"")+(!nOk&&!nObj?`<span class="chip">尚無回應</span>`:"");
     const rs=document.getElementById("rs-"+it.id); rs.innerHTML="";
-    for(const r of list){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?"確認無誤":"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
+    const objs=list.filter(r=>r.state==="objection"), oks=list.filter(r=>r.state!=="objection");
+    const showAll=rs.dataset.all==="1"; const okShow= showAll? oks : oks.slice(-3);
+    for(const r of [...objs,...okShow]){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?"確認無誤":"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
+    if(oks.length>3){ const t=document.createElement("button"); t.type="button"; t.className="btn sm more"; t.textContent= showAll? "收合確認紀錄" : `顯示全部 ${oks.length} 筆確認`; t.addEventListener("click",()=>{ rs.dataset.all= showAll?"0":"1"; renderState(); }); rs.appendChild(t); }
   }
   const roster=cfg.roster; const leads=new Set(Object.values(cfg.lead||{}).filter(Boolean));
   document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); return `<button class="name ${e?"done":""} ${leads.has(n)?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"已閱 "+fmt(e.ts):(leads.has(n)?"主負責人":"點我確認已閱")}</small></button>`; }).join("");
