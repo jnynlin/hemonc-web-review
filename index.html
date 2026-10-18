@@ -196,7 +196,7 @@ const SECS=[
 const ALL=SECS.flatMap(s=>s.items.map(i=>({...i,sec:s.id})));
 const OTHER_OK_SECS=new Set(["kpi","pub"]);   // only sections where non-leads have standing: trial/transplant teams, listed authors
 const OTHER_OK_HINT={kpi:"團隊成員:確認這項數字與寫法無誤。",pub:"列名作者:確認同意刊出,且自己的角色寫法正確。"};
-let cfg={lead:{},roster:DEFAULT_ROSTER,leadNote:""};
+let cfg={lead:{},roster:DEFAULT_ROSTER,leadNote:"",notes:{}};
 let rows=[]; let db=null; let pendingName=null;
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -326,7 +326,7 @@ function renderState(){
   document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); const isLead=leads.has(n); const asking=pendingName===n;
     if(asking) return `<div class="name asking" data-n="${esc(n)}"><span>以「${esc(n)}」的名義記錄:本人已閱上列刊登內容,同意刊登${e?"(已確認過,再記一次)":""}</span><span class="ask"><button class="yes" type="button" data-n="${esc(n)}">是,已閱,同意刊登</button><button class="no" type="button">取消</button></span></div>`;
     const ob=!e&&objectors.get(n);
-    return `<button class="name ${e?"done":ob?"objected":""} ${isLead?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"✓ "+fmt(e.ts):ob?`已閱・有異議 ${ob}`:(isLead?"主負責人":"")}</small></button>`; }).join("");
+    return `<button class="name ${e?"done":ob?"objected":""} ${isLead?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"✓ "+fmt(e.ts):ob?`已閱・有異議 ${ob}`:(isLead?"主負責人":(cfg.notes&&cfg.notes[n])?esc(cfg.notes[n]):"")}</small></button>`; }).join("");
   const nDone=[...endorsers.keys()].filter(n=>roster.includes(n)).length; const nRead=roster.filter(n=>endorsers.has(n)||objectors.has(n)).length; document.getElementById("names-count").textContent=`同意 ${nDone} · 已閱 ${nRead} / ${roster.length}`;
   const extra=[...endorsers.keys()].filter(n=>!roster.includes(n));
   document.getElementById("s-end").textContent=`${nDone} / ${roster.length}`+(extra.length?` +${extra.length}`:"")+(nRead>nDone?`(另 ${nRead-nDone} 人有異議)`:"");
@@ -341,7 +341,7 @@ function renderState(){
 }
 
 renderStatic(); renderConfig(); renderState();
-fetch("config.json?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{ if(j){ cfg={lead:j.lead||{},roster:(Array.isArray(j.roster)&&j.roster.length)?j.roster:DEFAULT_ROSTER,leadNote:j.leadNote||""}; renderConfig(); renderState(); } }).catch(()=>{});
+fetch("config.json?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{ if(j){ cfg={lead:j.lead||{},roster:(Array.isArray(j.roster)&&j.roster.length)?j.roster:DEFAULT_ROSTER,leadNote:j.leadNote||"",notes:j.notes||{}}; renderConfig(); renderState(); } }).catch(()=>{});
 try{
   const app=initializeApp({apiKey:"AIzaSyB12T-DIgrwzPQQJjF3SvkjKnRYy0CxTd8",authDomain:"assistant-hub-cmuh.firebaseapp.com",projectId:"assistant-hub-cmuh",appId:"1:704995456524:web:111c2db8d85a073c8f2029"});
   db=getFirestore(app);
