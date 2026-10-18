@@ -10,13 +10,13 @@
 :root{
   --bg:#f5f6f3; --surface:#ffffff; --surface2:#eef1ec; --line:#d6dcd4;
   --ink:#1e2b33; --muted:#5f6f78; --accent:#1d6f78; --accent-ink:#ffffff;
-  --ok:#2f7d4e; --ok-bg:#e3f1e8; --obj:#b0413e; --obj-bg:#f8e3e2; --wait:#8a979e; --wait-bg:#eef1f2; --lead:#8a5a00; --lead-bg:#fbf1dc;
+  --ok:#2f7d4e; --ok-bg:#e3f1e8; --obj:#b0413e; --obj-bg:#f8e3e2; --wait:#8a979e; --wait-bg:#eef1f2; --lead:#8a5a00; --lead-bg:#fbf1dc; --chg-bg:#fbf1dc;
   --shadow:0 1px 2px rgba(20,35,45,.06);
 }
 @media (prefers-color-scheme: dark){
   :root{ color-scheme:dark;
     --bg:#131a1e; --surface:#1b2429; --surface2:#222d33; --line:#33414a; --ink:#e5ebee; --muted:#9aacb5;
-    --accent:#4fb3bd; --accent-ink:#0f1a1d; --ok:#5fc38a; --ok-bg:#1b3a2a; --obj:#e07a76; --obj-bg:#44231f; --wait:#8a979e; --wait-bg:#263036; --lead:#e0a93e; --lead-bg:#3a2f16; --shadow:none; }
+    --accent:#4fb3bd; --accent-ink:#0f1a1d; --ok:#5fc38a; --ok-bg:#1b3a2a; --obj:#e07a76; --obj-bg:#44231f; --wait:#8a979e; --wait-bg:#263036; --lead:#e0a93e; --lead-bg:#3a2f16; --chg-bg:#3a2f16; --shadow:none; }
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -76,6 +76,8 @@ textarea.note{width:100%;font:inherit;font-size:15px;border:1px solid var(--line
 .name .ask{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:4px}
 .name small{font-size:12px;color:var(--muted);font-weight:400}
 .name.done{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.name.objected{background:var(--chg-bg,#fbf1dc);border-color:var(--obj);color:var(--obj)}
+.name.objected small{color:var(--obj)}
 .name.done small{color:var(--ok)}
 .name.lead{border-color:var(--lead)}
 .confirm{display:grid;gap:8px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:12px}
@@ -107,7 +109,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
 
   <div class="stats">
     <div class="stat dl"><div class="lab">距異議截止</div><div class="val num" id="dl">—</div></div>
-    <div class="stat"><div class="lab">已閱確認</div><div class="val num" id="s-end">0 / 0</div></div>
+    <div class="stat"><div class="lab">已閱、同意刊登</div><div class="val num" id="s-end">0 / 0</div></div>
     <div class="stat"><div class="lab">主負責人已確認項目</div><div class="val num" id="s-ok">0 / 0</div></div>
     <div class="stat"><div class="lab">有異議的項目</div><div class="val num" id="s-obj">0</div></div>
   </div>
@@ -119,7 +121,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
       <section class="sec">
         <div class="shead"><h2>全科同仁已閱確認</h2><span class="r" id="names-count"></span></div>
         <div style="padding:12px 16px;display:grid;gap:10px">
-          <div class="r" style="font-size:14px;color:var(--muted)">點自己的名字,再按一次「已閱,同意刊登」。</div>
+          <div class="r" style="font-size:14px;color:var(--muted)">點自己的名字,再按一次「已閱,同意刊登」。按過「有異議」的同仁已算已閱,不必再點名字;異議處理後若同意,再點即可。</div>
           <div class="names" id="names"></div>
           <div class="other"><a href="#" id="otherlink" style="color:var(--accent);font-size:14px">名單沒有你?</a><span id="otherwrap" hidden><input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">已閱</button></span></div>
         </div>
@@ -275,8 +277,8 @@ function renderConfig(){
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
 }
 function renderState(){
-  const byItem={}; const endorsers=new Map();
-  for(const r of rows){ if(r.item==="all"&&r.state==="endorse"){ if(!endorsers.has(r.name)) endorsers.set(r.name,r); continue; } (byItem[r.item]=byItem[r.item]||[]).push(r); }
+  const byItem={}; const endorsers=new Map(); const objectors=new Map();
+  for(const r of rows){ if(r.item==="all"&&r.state==="endorse"){ if(!endorsers.has(r.name)) endorsers.set(r.name,r); continue; } if(r.state==="objection"){ objectors.set(r.name,(objectors.get(r.name)||0)+1); } (byItem[r.item]=byItem[r.item]||[]).push(r); }
   let okItems=0,objItems=0; const objList=[]; const secStat={};
   for(const it of ALL){
     const list=byItem[it.id]||[]; const lead=leadOf(it.sec);
@@ -295,10 +297,11 @@ function renderState(){
   const roster=cfg.roster; const leads=new Set(Object.values(cfg.lead||{}).filter(Boolean));
   document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); const isLead=leads.has(n); const asking=pendingName===n;
     if(asking) return `<div class="name asking" data-n="${esc(n)}"><span>以「${esc(n)}」的名義記錄:本人已閱上列刊登內容,同意刊登${e?"(已確認過,再記一次)":""}</span><span class="ask"><button class="yes" type="button" data-n="${esc(n)}">是,已閱,同意刊登</button><button class="no" type="button">取消</button></span></div>`;
-    return `<button class="name ${e?"done":""} ${isLead?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"✓ "+fmt(e.ts):(isLead?"主負責人":"")}</small></button>`; }).join("");
-  const nDone=[...endorsers.keys()].filter(n=>roster.includes(n)).length; document.getElementById("names-count").textContent=`${nDone} / ${roster.length} 已閱`;
+    const ob=!e&&objectors.get(n);
+    return `<button class="name ${e?"done":ob?"objected":""} ${isLead?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"✓ "+fmt(e.ts):ob?`已閱・有異議 ${ob}`:(isLead?"主負責人":"")}</small></button>`; }).join("");
+  const nDone=[...endorsers.keys()].filter(n=>roster.includes(n)).length; const nRead=roster.filter(n=>endorsers.has(n)||objectors.has(n)).length; document.getElementById("names-count").textContent=`同意 ${nDone} · 已閱 ${nRead} / ${roster.length}`;
   const extra=[...endorsers.keys()].filter(n=>!roster.includes(n));
-  document.getElementById("s-end").textContent=`${[...endorsers.keys()].filter(n=>roster.includes(n)).length} / ${roster.length}`+(extra.length?` +${extra.length}`:"");
+  document.getElementById("s-end").textContent=`${nDone} / ${roster.length}`+(extra.length?` +${extra.length}`:"")+(nRead>nDone?`(另 ${nRead-nDone} 人有異議)`:"");
   document.getElementById("s-ok").textContent=`${okItems} / ${ALL.length}`;
   document.getElementById("s-obj").textContent=objItems;
   document.getElementById("st-obj").innerHTML= objList.length? objList.map(({it,r})=>`<div class="resp obj">${esc(it.code)} ${esc(r.name)}:${esc(r.note)} · ${fmt(r.ts)}</div>`).join("") : "無";
