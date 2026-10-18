@@ -67,8 +67,12 @@ section.sec{background:var(--surface);border:1px solid var(--line);border-radius
 textarea.note{width:100%;font:inherit;font-size:15px;border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--surface);color:var(--ink);min-height:44px;resize:vertical}
 .resp{font-size:14px;border-left:3px solid var(--line);padding-left:10px;color:var(--muted)}
 .resp.obj{border-left-color:var(--obj);color:var(--ink)}
-.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
-.name{font:inherit;font-size:16px;font-weight:500;border:1px solid var(--line);border-radius:8px;padding:12px 8px;background:var(--surface);color:var(--ink);cursor:pointer;text-align:center;display:grid;gap:2px}
+.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.name{font:inherit;font-size:16px;font-weight:500;border:1px solid var(--line);border-radius:8px;padding:10px 6px;background:var(--surface);color:var(--ink);cursor:pointer;text-align:center;display:grid;gap:2px;position:relative}
+.name.asking{grid-column:1 / -1;background:var(--surface2);border-color:var(--accent);padding:12px;cursor:default}
+.name .yes{font:inherit;font-size:14px;font-weight:700;border:0;border-radius:6px;padding:8px 12px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.name .no{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--surface);color:var(--muted);cursor:pointer}
+.name .ask{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:4px}
 .name small{font-size:12px;color:var(--muted);font-weight:400}
 .name.done{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
 .name.done small{color:var(--ok)}
@@ -76,7 +80,7 @@ textarea.note{width:100%;font:inherit;font-size:15px;border:1px solid var(--line
 .confirm{display:grid;gap:8px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:12px}
 .confirm .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .other{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--muted)}
-.other input{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--surface);color:var(--ink);width:140px}
+.other input{font:inherit;font-size:15px;border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--surface);color:var(--ink);width:140px;margin:0 6px}
 .who{font-size:13px;color:var(--muted)}
 table.stat{border-collapse:collapse;width:100%;font-size:14px}
 table.stat th,table.stat td{text-align:left;padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
@@ -112,21 +116,17 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
 
     <aside class="right">
       <section class="sec">
-        <div class="shead"><h2>全科同仁已閱確認</h2><span class="r">點自己的名字</span></div>
-        <div style="padding:12px 16px;display:grid;gap:12px">
+        <div class="shead"><h2>全科同仁已閱確認</h2><span class="r" id="names-count"></span></div>
+        <div style="padding:12px 16px;display:grid;gap:10px">
+          <div class="r" style="font-size:14px;color:var(--muted)">點自己的名字,再按一次「已閱,同意刊登」。</div>
           <div class="names" id="names"></div>
-          <div class="other">名單沒有你:<input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">已閱</button></div>
-          <div class="confirm" id="confirm" hidden>
-            <div id="confirm-text"></div>
-            <div class="row"><button class="btn primary sm" id="confirm-yes" type="button">是,本人已閱,同意刊登</button><button class="btn sm" id="confirm-no" type="button">取消</button></div>
-          </div>
+          <div class="other"><a href="#" id="otherlink" style="color:var(--accent);font-size:14px">名單沒有你?</a><span id="otherwrap" hidden><input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">已閱</button></span></div>
         </div>
       </section>
 
       <section class="sec">
         <div class="shead"><h2>統計</h2><span class="r">即時更新</span></div>
         <div style="padding:12px 16px;display:grid;gap:12px">
-          <div><h3>尚未確認已閱</h3><div id="st-pending" class="pending">—</div></div>
           <div><h3>異議清單</h3><div id="st-obj" class="pending">—</div></div>
           <div><h3>各段確認狀況</h3><table class="stat" id="st-sec"></table></div>
         </div>
@@ -226,25 +226,20 @@ function renderStatic(){
   });
   document.getElementById("secs").addEventListener("click",e=>{ const c=e.target.closest("button.whoc"); if(!c) return; const inp=document.getElementById("whosel-"+c.dataset.id); inp.value=c.dataset.n; inp.dispatchEvent(new Event("change")); });
 
-  document.getElementById("names").addEventListener("click",e=>{
-    const n=e.target.closest("button.name"); if(!n) return;
-    askEndorse(n.dataset.n);
+  document.getElementById("names").addEventListener("click",async e=>{
+    const yes=e.target.closest("button.yes"), no=e.target.closest("button.no");
+    if(yes){ const n=yes.dataset.n; await submit("all","endorse","",n,"同仁",yes); pendingName=null; renderState(); return; }
+    if(no){ pendingName=null; renderState(); return; }
+    const card=e.target.closest("button.name"); if(!card) return;
+    pendingName= pendingName===card.dataset.n ? null : card.dataset.n; renderState();
   });
-  document.getElementById("otherbtn").addEventListener("click",()=>{ const v=document.getElementById("othername").value.trim(); if(!v){ banner("請輸入姓名。",false); return; } askEndorse(v); });
-  document.getElementById("confirm-no").addEventListener("click",()=>{ pendingName=null; document.getElementById("confirm").hidden=true; });
-  document.getElementById("confirm-yes").addEventListener("click",async e=>{ if(!pendingName) return; await submit("all","endorse","",pendingName,"同仁",e.currentTarget); pendingName=null; document.getElementById("confirm").hidden=true; });
+  document.getElementById("otherlink").addEventListener("click",e=>{ e.preventDefault(); const w=document.getElementById("otherwrap"); w.hidden=!w.hidden; if(!w.hidden) document.getElementById("othername").focus(); });
+  document.getElementById("otherbtn").addEventListener("click",async e=>{ const v=document.getElementById("othername").value.trim(); if(!v){ banner("請輸入姓名。",false); return; } await submit("all","endorse","",v,"同仁",e.currentTarget); document.getElementById("othername").value=""; });
 }
 function whoPicker(id,isOk){
   const lead=leadOf(ALL.find(x=>x.id===id).sec);
   const names=[...new Set([lead,...cfg.roster].filter(Boolean))];
   return `<div>${isOk?"確認人(非主負責人,記錄為同仁確認)":"異議人"}:<input id="whosel-${id}" list="roster-list" value="${esc(lead)}" placeholder="姓名" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"> ${lead?`<span class="leadtag">主負責人 ${esc(lead)}</span>`:""} 然後再按一次按鈕送出。</div>`;
-}
-function askEndorse(name){
-  const already=rows.some(r=>r.item==="all"&&r.state==="endorse"&&r.name===name);
-  pendingName=name;
-  document.getElementById("confirm-text").textContent= already ? `${name} 已確認過。要再記錄一次嗎?` : `以「${name}」的名義記錄:本人已閱上列刊登內容,同意刊登。`;
-  document.getElementById("confirm").hidden=false;
-  document.getElementById("confirm").scrollIntoView({block:"nearest"});
 }
 async function submit(item,state,note,name,role,btn){
   if(!db){ banner("尚未連上資料庫,請重新整理後再試。",false); return; }
@@ -281,13 +276,14 @@ function renderState(){
     if(oks.length>3){ const t=document.createElement("button"); t.type="button"; t.className="btn sm more"; t.textContent= showAll? "收合確認紀錄" : `顯示全部 ${oks.length} 筆確認`; t.addEventListener("click",()=>{ rs.dataset.all= showAll?"0":"1"; renderState(); }); rs.appendChild(t); }
   }
   const roster=cfg.roster; const leads=new Set(Object.values(cfg.lead||{}).filter(Boolean));
-  document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); return `<button class="name ${e?"done":""} ${leads.has(n)?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"已閱 "+fmt(e.ts):(leads.has(n)?"主負責人":"點我確認已閱")}</small></button>`; }).join("");
+  document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); const isLead=leads.has(n); const asking=pendingName===n;
+    if(asking) return `<div class="name asking" data-n="${esc(n)}"><span>以「${esc(n)}」的名義記錄:本人已閱上列刊登內容,同意刊登${e?"(已確認過,再記一次)":""}</span><span class="ask"><button class="yes" type="button" data-n="${esc(n)}">是,已閱,同意刊登</button><button class="no" type="button">取消</button></span></div>`;
+    return `<button class="name ${e?"done":""} ${isLead?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"✓ "+fmt(e.ts):(isLead?"主負責人":"")}</small></button>`; }).join("");
+  const nDone=[...endorsers.keys()].filter(n=>roster.includes(n)).length; document.getElementById("names-count").textContent=`${nDone} / ${roster.length} 已閱`;
   const extra=[...endorsers.keys()].filter(n=>!roster.includes(n));
   document.getElementById("s-end").textContent=`${[...endorsers.keys()].filter(n=>roster.includes(n)).length} / ${roster.length}`+(extra.length?` +${extra.length}`:"");
   document.getElementById("s-ok").textContent=`${okItems} / ${ALL.length}`;
   document.getElementById("s-obj").textContent=objItems;
-  const pend=roster.filter(n=>!endorsers.has(n));
-  document.getElementById("st-pending").textContent= pend.length? pend.join("、") : "全員已閱";
   document.getElementById("st-obj").innerHTML= objList.length? objList.map(({it,r})=>`<div class="resp obj">${esc(it.code)} ${esc(r.name)}:${esc(r.note)} · ${fmt(r.ts)}</div>`).join("") : "無";
   document.getElementById("st-sec").innerHTML=`<tr><th>段落</th><th>主負責人</th><th>確認/項目</th><th>異議</th></tr>`+SECS.map(s=>{ const st=secStat[s.id]||{n:s.items.length,ok:0,obj:0}; return `<tr><td>${esc(s.name.split("(")[0])}</td><td>${esc(leadOf(s.id)||"—")}</td><td class="num">${st.ok} / ${st.n}</td><td class="num">${st.obj}</td></tr>`; }).join("");
 }
