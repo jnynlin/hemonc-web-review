@@ -124,7 +124,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
       </section>
 
       <section class="sec">
-        <div class="shead"><h2>統計</h2><button class="btn sm" id="csv" type="button">匯出 CSV</button></div>
+        <div class="shead"><h2>統計</h2><span class="r">即時更新</span></div>
         <div style="padding:12px 16px;display:grid;gap:12px">
           <div><h3>尚未確認已閱</h3><div id="st-pending" class="pending">—</div></div>
           <div><h3>異議清單</h3><div id="st-obj" class="pending">—</div></div>
@@ -233,7 +233,6 @@ function renderStatic(){
   document.getElementById("otherbtn").addEventListener("click",()=>{ const v=document.getElementById("othername").value.trim(); if(!v){ banner("請輸入姓名。",false); return; } askEndorse(v); });
   document.getElementById("confirm-no").addEventListener("click",()=>{ pendingName=null; document.getElementById("confirm").hidden=true; });
   document.getElementById("confirm-yes").addEventListener("click",async e=>{ if(!pendingName) return; await submit("all","endorse","",pendingName,"同仁",e.currentTarget); pendingName=null; document.getElementById("confirm").hidden=true; });
-  document.getElementById("csv").addEventListener("click",exportCsv);
 }
 function whoPicker(id,isOk){
   const lead=leadOf(ALL.find(x=>x.id===id).sec);
@@ -291,12 +290,6 @@ function renderState(){
   document.getElementById("st-pending").textContent= pend.length? pend.join("、") : "全員已閱";
   document.getElementById("st-obj").innerHTML= objList.length? objList.map(({it,r})=>`<div class="resp obj">${esc(it.code)} ${esc(r.name)}:${esc(r.note)} · ${fmt(r.ts)}</div>`).join("") : "無";
   document.getElementById("st-sec").innerHTML=`<tr><th>段落</th><th>主負責人</th><th>確認/項目</th><th>異議</th></tr>`+SECS.map(s=>{ const st=secStat[s.id]||{n:s.items.length,ok:0,obj:0}; return `<tr><td>${esc(s.name.split("(")[0])}</td><td>${esc(leadOf(s.id)||"—")}</td><td class="num">${st.ok} / ${st.n}</td><td class="num">${st.obj}</td></tr>`; }).join("");
-}
-function exportCsv(){
-  const head=["時間","項目","姓名","身分","回應","備註"];
-  const lines=[head.join(",")].concat(rows.map(r=>[fmt(r.ts),r.item,r.name,r.role,r.state,(r.note||"").replace(/[\r\n,]/g," ")].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")));
-  const blob=new Blob(["﻿"+lines.join("\n")],{type:"text/csv;charset=utf-8"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`hemonc_web_review_${new Date().toISOString().slice(0,10)}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 
 renderStatic(); renderConfig(); renderState();
