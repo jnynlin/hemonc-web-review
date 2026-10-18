@@ -56,6 +56,7 @@ section.sec{background:var(--surface);border:1px solid var(--line);border-radius
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .btn.ok{color:var(--ok)} .btn.obj{color:var(--obj)}
 .btn.sm{font-size:14px;padding:7px 12px}
+.btn.other-ok{font-weight:500;color:var(--muted);font-size:13px;padding:7px 10px}
 .btn.ok.done{background:var(--ok-bg);border-color:var(--ok)}
 .btn:disabled{opacity:.55;cursor:default}
 .btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -93,7 +94,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     <p class="sub">10/21(三)中午前未表示異議的項目,視為同意刊登。今天 <span id="today" class="num"></span></p>
   </header>
 
-  <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段標示主負責人,由主負責人逐項按「確認無誤」或「有異議」。右半部是全科同仁名單,看完後點自己的名字一次,即記錄「已閱,同意刊登」。不用登入。</div>
+  <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段的「確認無誤」按鈕已帶主負責人姓名,主負責人逐項按一下即可;要異議就按「有異議」寫一句。其他人代為確認請按「其他人確認」。右半部是全科同仁名單,看完後點自己的名字一次,即記錄「已閱,同意刊登」。不用登入。</div>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -198,7 +199,7 @@ function renderStatic(){
       <div class="src">來源:${esc(it.src)}${(it.links&&it.links.length)?` · ${it.links.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}`:""}</div>
       ${it.before?`<div class="before" hidden><span class="blab">官網現況(2026-10-18)</span>${esc(it.before)}</div>`:""}
       <div class="acts">
-        <button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" id="ok-${it.id}">✓ 確認無誤</button>
+        <button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" id="ok-${it.id}">✓ 確認無誤</button><button class="btn sm other-ok" type="button" data-id="${it.id}" id="oth-${it.id}" title="非主負責人代為確認" hidden>其他人確認</button>
         <button class="btn sm obj" type="button" data-id="${it.id}" data-s="objection">✗ 有異議</button>
         <span class="tally" id="tl-${it.id}"></span>
       </div>
@@ -209,8 +210,13 @@ function renderStatic(){
   document.getElementById("secs").addEventListener("click",async e=>{
     const b=e.target.closest("button.btn"); if(!b||b.disabled) return;
     const id=b.dataset.id, s=b.dataset.s, it=ALL.find(x=>x.id===id), ta=document.getElementById("nt-"+id), who=document.getElementById("who-"+id);
+    if(b.classList.contains("other-ok")){ who.hidden=false; who.innerHTML=whoPicker(id,true); const inp=document.getElementById("whosel-"+id); inp.value=""; inp.focus(); return; }
     if(s==="objection" && ta.hidden){ ta.hidden=false; who.hidden=false; who.innerHTML=whoPicker(id); ta.focus(); return; }
-    if(s==="ok" && who.hidden){ who.hidden=false; who.innerHTML=whoPicker(id,true); return; }
+    if(s==="ok" && who.hidden){
+      const lead0=leadOf(it.sec);
+      if(lead0){ await submit(id,"ok","",lead0,"主負責人",b); return; }   // one click for the named lead
+      who.hidden=false; who.innerHTML=whoPicker(id,true); return;
+    }
     const sel=document.getElementById("whosel-"+id); const name=(sel&&sel.value.trim())||"";
     if(!name){ banner("請先選或填確認人姓名。",false); return; }
     const lead=leadOf(it.sec); const role= name===lead ? "主負責人" : "同仁";
@@ -253,7 +259,8 @@ async function submit(item,state,note,name,role,btn){
   btn.disabled=false;
 }
 function renderConfig(){
-  for(const s of SECS){ const l=leadOf(s.id); document.getElementById("lead-"+s.id).innerHTML= l?`<span class="leadtag">主負責人 ${esc(l)}</span>`:`<span class="r">主負責人待指定</span>`; }
+  for(const s of SECS){ const l=leadOf(s.id); document.getElementById("lead-"+s.id).innerHTML= l?`<span class="leadtag">主負責人 ${esc(l)}</span>`:`<span class="r">主負責人待指定</span>`;
+    for(const it of s.items){ const b=document.getElementById("ok-"+it.id); const o=document.getElementById("oth-"+it.id); if(b){ b.textContent= l?`✓ ${l} 確認無誤`:"✓ 確認無誤"; } if(o){ o.hidden=!l; } } }
   if(cfg.leadNote){ document.getElementById("how").innerHTML=`<b>怎麼用</b>:${esc(cfg.leadNote)}`; }
   let dl=document.getElementById("roster-list"); if(!dl){ dl=document.createElement("datalist"); dl.id="roster-list"; document.body.appendChild(dl); }
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
@@ -268,7 +275,7 @@ function renderState(){
     const nOk=list.filter(r=>r.state==="ok").length, nObj=list.filter(r=>r.state==="objection").length;
     if(nObj){ objItems++; list.filter(r=>r.state==="objection").forEach(r=>objList.push({it,r})); } else if(leadOk) okItems++;
     secStat[it.sec]=secStat[it.sec]||{n:0,ok:0,obj:0}; secStat[it.sec].n++; if(leadOk&&!nObj) secStat[it.sec].ok++; if(nObj) secStat[it.sec].obj++;
-    document.getElementById("ok-"+it.id).classList.toggle("done",leadOk&&!nObj);
+    const okb=document.getElementById("ok-"+it.id); okb.classList.toggle("done",leadOk&&!nObj); if(lead){ okb.textContent= leadOk ? `✓ ${lead} 已確認` : `✓ ${lead} 確認無誤`; }
     document.getElementById("tl-"+it.id).innerHTML=(nOk?`<span class="chip ok">確認 ${nOk}</span>`:"")+(nObj?`<span class="chip obj">異議 ${nObj}</span>`:"")+(!nOk&&!nObj?`<span class="chip">尚無回應</span>`:"");
     const rs=document.getElementById("rs-"+it.id); rs.innerHTML="";
     for(const r of list){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?"確認無誤":"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
