@@ -142,6 +142,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
       <section class="sec">
         <div class="shead"><h2>統計</h2><span class="r">即時更新</span></div>
         <div style="padding:12px 16px;display:grid;gap:12px">
+          <div><h3>待回覆的異議(依主負責人)</h3><div id="st-pendobj" class="pending">—</div></div>
           <div><h3>異議清單</h3><div id="st-obj" class="pending">—</div></div>
           <div><h3>各段確認狀況</h3><table class="stat" id="st-sec"></table></div>
         </div>
@@ -330,6 +331,10 @@ function renderState(){
   document.getElementById("s-end").textContent=`${nDone} / ${roster.length}`+(extra.length?` +${extra.length}`:"")+(nRead>nDone?`(另 ${nRead-nDone} 人有異議)`:"");
   document.getElementById("s-ok").textContent=`${okItems} / ${ALL.length}`;
   document.getElementById("s-obj").textContent=objItems;
+  const repliedItems=new Set(rows.filter(r=>r.role==="回覆").map(r=>r.item));
+  const pend=objList.filter(({it})=>!repliedItems.has(it.id));
+  const byLead={}; for(const x of pend){ const l=leadOf(x.it.sec)||"(未指定)"; (byLead[l]=byLead[l]||[]).push(x); }
+  document.getElementById("st-pendobj").innerHTML= pend.length? Object.entries(byLead).map(([l,arr])=>`<div><b>${esc(l)}</b>:${arr.map(({it,r})=>`${esc(it.code)}(${esc(r.name)})`).join("、")}</div>`).join("") : "無";
   document.getElementById("st-obj").innerHTML= objList.length? objList.map(({it,r})=>`<div class="resp obj">${esc(it.code)} ${esc(r.name)}:${esc(r.note)} · ${fmt(r.ts)}</div>`).join("") : "無";
   document.getElementById("st-sec").innerHTML=`<tr><th>段落</th><th>主負責人</th><th>確認/項目</th><th>異議</th></tr>`+SECS.map(s=>{ const st=secStat[s.id]||{n:s.items.length,ok:0,obj:0}; return `<tr><td>${esc(s.name.split("(")[0])}</td><td>${esc(leadOf(s.id)||"—")}</td><td class="num">${st.ok} / ${st.n}</td><td class="num">${st.obj}</td></tr>`; }).join("");
 }
