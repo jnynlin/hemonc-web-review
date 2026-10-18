@@ -156,7 +156,7 @@ const SECS=[
   {id:"k42",code:"4-2",txt:"細胞治療(CIK/DC-CIK 等)自特管辦法公布至 2024 年 11 月累計 783 人簽署同意接受治療。",src:"本院細胞治療中心頁面,院方統計",before:"(無量化成果)",links:[["本院 細胞治療中心頁(783 人出處)","https://www.cmuh.cmu.edu.tw/CMUHPagesDetail/SpecialtyHealthcare/CellTherapyCenter"]]},
   {id:"k43",code:"4-3",txt:"2021–2026 年本科醫師以第一或通訊作者於移植專業期刊發表造血幹細胞移植臨床研究,並參與 Lancet Oncol、JCO、NEJM 刊登之國際多中心第三期試驗。",src:"PubMed 逐篇核對",before:"(無)",links:[]},
   {id:"k44",code:"4-4",txt:"CAR001 異體多靶向 CAR-T(γδ T 細胞,與長聖國際生技合作)已通過美國 FDA 與台灣 TFDA IND 審查,於本院執行第一期臨床試驗,適應症為實體腫瘤;屬臨床試驗用藥,與健保給付 CAR-T 為不同項目。",src:"本院官網 再生醫療 CAR-T 專頁;聯合報健康版 2024",before:"原頁有「推進 CAR001 臨床研究」一句,未說明是試驗用藥",links:[["本院 再生醫療 CAR-T 專頁","https://www.cmuh.cmu.edu.tw/CMUHPagesDetail/RegenerativeMedical/CAR-T"],["聯合報健康版","https://health.udn.com/health/story/5999/8401706"]]},
-  {id:"k45",code:"4-5",txt:"移植年例數與一年存活率:向移植團隊索取;進行中臨床試驗件數:向臨床試驗中心索取。到位即補入,未到位不等。",src:"院內數字",before:"(無)",links:[]}
+  {id:"k45",code:"4-5",txt:"移植年例數與一年整體存活率:請移植團隊(陳姿婷醫師、葉士芃醫師)提供;進行中臨床試驗件數:請臨床試驗中心(白禮源主任)提供;國家品質標章兩獎的得獎年度與等級:請科秘查明。到位即補入;10/21 中午未到位,以上列四項送出。",src:"院內數字",before:"(無)",links:[]}
  ]},
  {id:"pub",name:"代表性論文(列名者請確認同意刊出與角色寫法)",items:[
   {id:"p51",code:"5-1",txt:"AdvanTIG-203 食道鱗癌 ociperlimab(anti-TIGIT)+tislelizumab 國際多中心 Phase II,Nat Commun 2026。本科林振源第二作者。",src:"DOI 10.1038/s41467-026-77705-8,2026-09-18 線上刊出,PubMed 待索引",before:"(官網無論文)",links:[["DOI(Nature Communications)","https://doi.org/10.1038/s41467-026-77705-8"],["ClinicalTrials.gov NCT04732494","https://clinicaltrials.gov/study/NCT04732494"]]},
@@ -202,7 +202,7 @@ function renderStatic(){
       <div class="txt">${esc(it.txt)}</div>
       <div class="src">來源:${esc(it.src)}${(it.links&&it.links.length)?` · ${it.links.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}`:""}</div>
       <div class="acts">
-        <button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" id="ok-${it.id}">✓ 確認無誤</button><button class="btn sm other-ok" type="button" data-id="${it.id}" id="oth-${it.id}" title="非主負責人代為確認" hidden>其他人確認</button>
+        ${it.id==="k45"?`<button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" data-provide="1" id="ok-${it.id}">提供數字</button>`:`<button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" id="ok-${it.id}">✓ 確認無誤</button><button class="btn sm other-ok" type="button" data-id="${it.id}" id="oth-${it.id}" title="非主負責人代為確認" hidden>其他人確認</button>`}
         <button class="btn sm obj" type="button" data-id="${it.id}" data-s="objection">✗ 有異議</button>
         <span class="tally" id="tl-${it.id}"></span>
       </div>
@@ -214,6 +214,12 @@ function renderStatic(){
     const b=e.target.closest("button.btn"); if(!b||b.disabled) return;
     const id=b.dataset.id, s=b.dataset.s, it=ALL.find(x=>x.id===id), ta=document.getElementById("nt-"+id), who=document.getElementById("who-"+id);
     if(b.classList.contains("other-ok")){ who.hidden=false; who.innerHTML=whoPicker(id,true); const inp=document.getElementById("whosel-"+id); inp.value=""; inp.focus(); const okb=document.getElementById("ok-"+id); okb.textContent="✓ 以上方姓名送出確認"; okb.dataset.other="1"; return; }
+    if(b.dataset.provide){
+      if(who.hidden){ who.hidden=false; who.innerHTML=`<div class="src" style="margin-bottom:4px">提供人(移植團隊、臨床試驗中心或科秘):</div><div>姓名:<input id="whosel-${id}" list="roster-list" placeholder="姓名" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"> 在下方框填數字,再按一次「提供數字」送出。</div>`; ta.hidden=false; ta.placeholder="例:2023/2024/2025 年移植 xx/xx/xx 例;一年整體存活率 xx%;進行中試驗 xx 件;SNQ xxxx 年 銀獎"; ta.focus(); b.textContent="送出數字"; return; }
+      const sel=document.getElementById("whosel-"+id); const name=(sel&&sel.value.trim())||""; const note=ta.value.trim();
+      if(!name){ banner("請先填提供人姓名。",false); return; } if(!note){ banner("請在框內填數字。",false); ta.focus(); return; }
+      await submit(id,"ok",note,name,"數字提供",b); ta.value=""; ta.hidden=true; who.hidden=true; b.textContent="提供數字"; return;
+    }
     if(s==="objection" && ta.hidden){ ta.hidden=false; who.hidden=false; who.innerHTML=whoPicker(id); ta.focus(); return; }
     if(s==="ok" && who.hidden){
       const lead0=leadOf(it.sec);
@@ -257,7 +263,7 @@ async function submit(item,state,note,name,role,btn){
 }
 function renderConfig(){
   for(const s of SECS){ const l=leadOf(s.id); document.getElementById("lead-"+s.id).innerHTML= (l?`<span class="leadtag">主負責人 ${esc(l)}</span>`:`<span class="r">主負責人待指定</span>`)+(s.id==="pub"?` <span class="r">列名作者可按「列名作者確認」</span>`:s.id==="kpi"?` <span class="r">移植/細胞治療團隊可按「團隊成員確認」</span>`:"");
-    for(const it of s.items){ const b=document.getElementById("ok-"+it.id); const o=document.getElementById("oth-"+it.id); if(b){ b.textContent= l?`✓ ${l} 確認無誤`:"✓ 確認無誤"; } if(o){ o.hidden=!(l&&OTHER_OK_SECS.has(s.id)); o.textContent= s.id==="pub"?"列名作者確認":"團隊成員確認"; } } }
+    for(const it of s.items){ if(it.id==="k45") continue; const b=document.getElementById("ok-"+it.id); const o=document.getElementById("oth-"+it.id); if(b){ b.textContent= l?`✓ ${l} 確認無誤`:"✓ 確認無誤"; } if(o){ o.hidden=!(l&&OTHER_OK_SECS.has(s.id)); o.textContent= s.id==="pub"?"列名作者確認":"團隊成員確認"; } } }
   if(cfg.leadNote){ document.getElementById("how").innerHTML=`<span class="eyebrow">給全科同仁</span>${esc(cfg.leadNote).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}`; }
   let dl=document.getElementById("roster-list"); if(!dl){ dl=document.createElement("datalist"); dl.id="roster-list"; document.body.appendChild(dl); }
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
@@ -272,12 +278,12 @@ function renderState(){
     const nOk=list.filter(r=>r.state==="ok").length, nObj=list.filter(r=>r.state==="objection").length;
     if(nObj){ objItems++; list.filter(r=>r.state==="objection").forEach(r=>objList.push({it,r})); } else if(leadOk) okItems++;
     secStat[it.sec]=secStat[it.sec]||{n:0,ok:0,obj:0}; secStat[it.sec].n++; if(leadOk&&!nObj) secStat[it.sec].ok++; if(nObj) secStat[it.sec].obj++;
-    const okb=document.getElementById("ok-"+it.id); okb.classList.toggle("done",leadOk&&!nObj); if(lead){ okb.textContent= leadOk ? `✓ ${lead} 已確認` : `✓ ${lead} 確認無誤`; }
+    const okb=document.getElementById("ok-"+it.id); if(it.id!=="k45"){ okb.classList.toggle("done",leadOk&&!nObj); if(lead){ okb.textContent= leadOk ? `✓ ${lead} 已確認` : `✓ ${lead} 確認無誤`; } } else { okb.classList.toggle("done",nOk>0); }
     document.getElementById("tl-"+it.id).innerHTML=(nOk?`<span class="chip ok">確認 ${nOk}</span>`:"")+(nObj?`<span class="chip obj">異議 ${nObj}</span>`:"")+(!nOk&&!nObj?`<span class="chip">尚無回應</span>`:"");
     const rs=document.getElementById("rs-"+it.id); rs.innerHTML="";
     const objs=list.filter(r=>r.state==="objection"), oks=list.filter(r=>r.state!=="objection");
     const showAll=rs.dataset.all==="1"; const okShow= showAll? oks : oks.slice(-3);
-    for(const r of [...objs,...okShow]){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?"確認無誤":"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
+    for(const r of [...objs,...okShow]){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?(r.role==="數字提供"?"提供數字":"確認無誤"):"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
     if(oks.length>3){ const t=document.createElement("button"); t.type="button"; t.className="btn sm more"; t.textContent= showAll? "收合確認紀錄" : `顯示全部 ${oks.length} 筆確認`; t.addEventListener("click",()=>{ rs.dataset.all= showAll?"0":"1"; renderState(); }); rs.appendChild(t); }
   }
   const roster=cfg.roster; const leads=new Set(Object.values(cfg.lead||{}).filter(Boolean));
