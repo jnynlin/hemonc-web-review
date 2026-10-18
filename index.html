@@ -94,7 +94,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
     <p class="sub">10/21(三)中午前未表示異議的項目,視為同意刊登。今天 <span id="today" class="num"></span></p>
   </header>
 
-  <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段的「確認無誤」按鈕已帶主負責人姓名,主負責人逐項按一下即可;要異議就按「有異議」寫一句。其他人代為確認請按「其他人確認」。右半部是全科同仁名單,看完後點自己的名字一次,即記錄「已閱,同意刊登」。不用登入。</div>
+  <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段的「確認無誤」按鈕已帶主負責人姓名,主負責人逐項按一下即可;要異議就按「有異議」寫一句。非主負責人也想對某項表示確認,按「其他人確認」填自己的名字;這會記為「同仁確認」,不會取代主負責人的確認。右半部是全科同仁名單,看完後點自己的名字一次,即記錄「已閱,同意刊登」。不用登入。</div>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -210,7 +210,7 @@ function renderStatic(){
   document.getElementById("secs").addEventListener("click",async e=>{
     const b=e.target.closest("button.btn"); if(!b||b.disabled) return;
     const id=b.dataset.id, s=b.dataset.s, it=ALL.find(x=>x.id===id), ta=document.getElementById("nt-"+id), who=document.getElementById("who-"+id);
-    if(b.classList.contains("other-ok")){ who.hidden=false; who.innerHTML=whoPicker(id,true); const inp=document.getElementById("whosel-"+id); inp.value=""; inp.focus(); return; }
+    if(b.classList.contains("other-ok")){ who.hidden=false; who.innerHTML=whoPicker(id,true); const inp=document.getElementById("whosel-"+id); inp.value=""; inp.focus(); const okb=document.getElementById("ok-"+id); okb.textContent="✓ 以上方姓名送出確認"; okb.dataset.other="1"; return; }
     if(s==="objection" && ta.hidden){ ta.hidden=false; who.hidden=false; who.innerHTML=whoPicker(id); ta.focus(); return; }
     if(s==="ok" && who.hidden){
       const lead0=leadOf(it.sec);
@@ -223,7 +223,7 @@ function renderStatic(){
     const note=s==="objection"?ta.value.trim():"";
     if(s==="objection" && !note){ banner("請先寫一句異議內容。",false); ta.focus(); return; }
     await submit(id,s,note,name,role,b);
-    ta.value=""; ta.hidden=true; who.hidden=true;
+    ta.value=""; ta.hidden=true; who.hidden=true; const okb2=document.getElementById("ok-"+id); if(okb2&&okb2.dataset.other){ delete okb2.dataset.other; renderState(); }
   });
   document.getElementById("secs").addEventListener("click",e=>{ const c=e.target.closest("button.whoc"); if(!c) return; const inp=document.getElementById("whosel-"+c.dataset.id); inp.value=c.dataset.n; inp.dispatchEvent(new Event("change")); });
 
@@ -240,7 +240,7 @@ function renderStatic(){
 function whoPicker(id,isOk){
   const lead=leadOf(ALL.find(x=>x.id===id).sec);
   const names=[...new Set([lead,...cfg.roster].filter(Boolean))];
-  return `<div>${isOk?"確認人":"異議人"}:<input id="whosel-${id}" list="roster-list" value="${esc(lead)}" placeholder="姓名" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"> ${lead?`<span class="leadtag">主負責人 ${esc(lead)}</span>`:""} 然後再按一次按鈕送出。</div>`;
+  return `<div>${isOk?"確認人(非主負責人,記錄為同仁確認)":"異議人"}:<input id="whosel-${id}" list="roster-list" value="${esc(lead)}" placeholder="姓名" autocomplete="off" style="font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:130px;background:var(--surface);color:var(--ink)"> ${lead?`<span class="leadtag">主負責人 ${esc(lead)}</span>`:""} 然後再按一次按鈕送出。</div>`;
 }
 function askEndorse(name){
   const already=rows.some(r=>r.item==="all"&&r.state==="endorse"&&r.name===name);
