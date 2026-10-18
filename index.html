@@ -79,6 +79,9 @@ table.stat{border-collapse:collapse;width:100%;font-size:14px}
 table.stat th,table.stat td{text-align:left;padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
 table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:0}
 .pending{color:var(--muted)}
+.before{font-size:14px;color:var(--muted);background:var(--surface2);border-left:3px solid var(--line);padding:8px 10px;border-radius:4px}
+.before .blab{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;margin-right:6px;color:var(--ink)}
+.src a{color:var(--accent)}
 .foot{color:var(--muted);font-size:14px}
 </style>
 </head>
@@ -92,6 +95,8 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
   <div class="card how" id="how"><b>怎麼用</b>:左半部是將刊登的文字,各段標示主負責人,由主負責人逐項按「確認無誤」或「有異議」。右半部是全科同仁名單,看完後點自己的名字一次,即記錄「已閱,同意刊登」。不用登入。</div>
 
   <div id="banner" class="banner" hidden></div>
+
+  <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn sm" id="togglebefore" type="button">顯示更正前後對照(官網現況 → 更新稿)</button><span class="src">每項「來源」後附可點的連結:官網現況頁、PubMed/DOI、新聞與公告。</span></div>
 
   <div class="stats">
     <div class="stat dl"><div class="lab">距異議截止</div><div class="val num" id="dl">—</div></div>
@@ -139,32 +144,32 @@ const DEADLINE="2026-10-21T12:00:00+08:00";
 const DEFAULT_ROSTER=["林振源","葉士芃","邱昌芳","白禮源","謝清昀","陳姿婷","連銘渝","林精湛","蔡明宏"];
 const SECS=[
  {id:"text",name:"刊登文字",items:[
-  {id:"t1",code:"主標",txt:"血液與實體腫瘤精準治療暨細胞治療",src:"定案 2026-10-18"},
-  {id:"t2",code:"摘要",txt:"整合血液惡性疾病與實體腫瘤照護,以分子檢測與基因分析選擇標靶、免疫與細胞治療;造血幹細胞移植、CAR-T 與 Phase I 臨床試驗銜接常規治療與創新療法。",src:"定案 2026-10-18"},
-  {id:"t3",code:"特色說明",txt:"涵蓋白血病、淋巴瘤、多發性骨髓瘤等血液惡性疾病,以及食道癌、頭頸癌、甲狀腺癌、乳癌、消化道癌與骨肉瘤等實體腫瘤,以分子與基因檢測擬定個人化治療。為中南部主要造血幹細胞移植中心之一,提供半相合、CD45RA 細胞減除式與全髓淋巴放射式移植;細胞治療涵蓋健保給付 CAR-T 與 CIK;持續引進 Phase I 與國際多中心臨床試驗。治療方案由多專科團隊會議決策,結合 AI 輔助化療照護與移植後免疫重建監測。",src:"原官網「中南部最多」「CD45RA 全台獨有」「TMLI 全台最多」三句因無公開數據不沿用;移植團隊提供年例數與一年存活率可改回"}
+  {id:"t1",code:"主標",txt:"血液與實體腫瘤精準治療暨細胞治療",src:"定案 2026-10-18",before:"(無主標;現為三個並列小標:造血幹細胞移植 / 臨床試驗 / CAR-T 細胞治療)",links:[["官網現況 特色介紹","https://www.cmuh.cmu.edu.tw/Department/Feature?depid=60"]]},
+  {id:"t2",code:"摘要",txt:"整合血液惡性疾病與實體腫瘤照護,以分子檢測與基因分析選擇標靶、免疫與細胞治療;造血幹細胞移植、CAR-T 與 Phase I 臨床試驗銜接常規治療與創新療法。",src:"定案 2026-10-18",before:"(無)",links:[]},
+  {id:"t3",code:"特色說明",txt:"涵蓋白血病、淋巴瘤、多發性骨髓瘤等血液惡性疾病,以及食道癌、頭頸癌、甲狀腺癌、乳癌、消化道癌與骨肉瘤等實體腫瘤,以分子與基因檢測擬定個人化治療。為中南部主要造血幹細胞移植中心之一,提供半相合、CD45RA 細胞減除式與全髓淋巴放射式移植;細胞治療涵蓋健保給付 CAR-T 與 CIK;持續引進 Phase I 與國際多中心臨床試驗。治療方案由多專科團隊會議決策,結合 AI 輔助化療照護與移植後免疫重建監測。",src:"原官網「中南部最多」「CD45RA 全台獨有」「TMLI 全台最多」三句因無公開數據不沿用;移植團隊提供年例數與一年存活率可改回",before:"造血幹細胞移植:台灣中南部最多移植案例與經驗,接收國內外轉介;半相合移植;CD45RA 細胞減除式移植(全台獨有經驗);全髓淋巴放射式移植(全台最多案例);CIK 治療血癌微量殘存疾病。臨床試驗:積極推動新藥與 Phase I 臨床試驗,與國際藥廠合作,為台灣重要試驗據點。CAR-T 細胞治療:專科醫師團隊確保治療安全;推進 CAR001(基因改造 γδ T 細胞)臨床研究。(約 250 字,三段並列)",links:[["官網現況 特色介紹(中)","https://www.cmuh.cmu.edu.tw/Department/Feature?depid=60"],["官網現況 特色介紹(英)","https://www.cmuh.cmu.edu.tw/Department/Feature_EN?depid=60"],["科室首頁(病種範圍)","https://www.cmuh.cmu.edu.tw/Department/Detail?depid=60"]]}
  ]},
  {id:"kpi",name:"臨床成效",items:[
-  {id:"k41",code:"4-1",txt:"自 2023 年 11 月起為健保署核准施行 CAR-T(Kymriah)治療之醫院,治療急性淋巴性白血病與瀰漫性大 B 細胞淋巴瘤,並有實際治療成功案例。",src:"健保署核准名單報導 2023/11;本院新聞稿"},
-  {id:"k42",code:"4-2",txt:"細胞治療(CIK/DC-CIK 等)自特管辦法公布至 2024 年 11 月累計 783 人簽署同意接受治療。",src:"本院細胞治療中心頁面,院方統計"},
-  {id:"k43",code:"4-3",txt:"2021–2026 年本科醫師以第一或通訊作者於移植專業期刊發表造血幹細胞移植臨床研究,並參與 Lancet Oncol、JCO、NEJM 刊登之國際多中心第三期試驗。",src:"PubMed 逐篇核對"},
-  {id:"k44",code:"4-4",txt:"移植年例數、一年存活率、進行中臨床試驗件數:向品管室與試驗中心索取,到位即補入,未到位不等。",src:"院內數字"}
+  {id:"k41",code:"4-1",txt:"自 2023 年 11 月起為健保署核准施行 CAR-T(Kymriah)治療之醫院,治療急性淋巴性白血病與瀰漫性大 B 細胞淋巴瘤,並有實際治療成功案例。",src:"健保署核准名單報導 2023/11;本院新聞稿",before:"(無量化成果)",links:[["健保署核准 7 家醫院名單報導 2023/11/3","https://www.healthnews.com.tw/article/59792"],["本院新聞:CAR-T 治療難治型淋巴癌 長者首例","https://www.cmuh.cmu.edu.tw/NewsInfo/NewsArticle?no=8384"]]},
+  {id:"k42",code:"4-2",txt:"細胞治療(CIK/DC-CIK 等)自特管辦法公布至 2024 年 11 月累計 783 人簽署同意接受治療。",src:"本院細胞治療中心頁面,院方統計",before:"(無量化成果)",links:[["本院 細胞治療中心頁(783 人出處)","https://www.cmuh.cmu.edu.tw/CMUHPagesDetail/SpecialtyHealthcare/CellTherapyCenter"]]},
+  {id:"k43",code:"4-3",txt:"2021–2026 年本科醫師以第一或通訊作者於移植專業期刊發表造血幹細胞移植臨床研究,並參與 Lancet Oncol、JCO、NEJM 刊登之國際多中心第三期試驗。",src:"PubMed 逐篇核對",before:"(無)",links:[]},
+  {id:"k44",code:"4-4",txt:"移植年例數、一年存活率、進行中臨床試驗件數:向品管室與試驗中心索取,到位即補入,未到位不等。",src:"院內數字",before:"(無)",links:[]}
  ]},
  {id:"pub",name:"代表性論文(列名者請確認同意刊出與角色寫法)",items:[
-  {id:"p51",code:"5-1",txt:"RATIONALE-306 食道鱗癌一線 phase 3,Lancet Oncol 2023。本科林振源合著。",src:"DOI 10.1016/S1470-2045(23)00108-0,PMID 37080222"},
-  {id:"p52",code:"5-2",txt:"半相合移植 ATG+PTCy GVHD 預防,Int J Hematol 2022。本科陳姿婷第一作者、葉士芃通訊作者。",src:"DOI 10.1007/s12185-021-03280-x,PMID 35226308"},
-  {id:"p53",code:"5-3",txt:"頭頸鱗癌 Rituximab+化療 Phase I 試驗,BMC Cancer 2022。本科自主主導,謝清昀第一作者、林精湛通訊作者。",src:"DOI 10.1186/s12885-022-09258-0,PMID 35168547"},
-  {id:"p54",code:"5-4",txt:"Zanidatamab+Tislelizumab Phase Ib/II HER2+ 胃癌,Clin Cancer Res 2026。本科白禮源第二作者。",src:"DOI 10.1158/1078-0432.CCR-24-4295,PMID 41324998;是否為台灣 site PI 請白醫師確認"},
-  {id:"p55",code:"5-5",txt:"局部晚期食道鱗癌化療加減放療有效性:全國性 target trial emulation,Anticancer Res 2026。本科林振源第一作者。",src:"DOI 10.21873/anticanres.18217,PMID 42203356"}
+  {id:"p51",code:"5-1",txt:"RATIONALE-306 食道鱗癌一線 phase 3,Lancet Oncol 2023。本科林振源合著。",src:"DOI 10.1016/S1470-2045(23)00108-0,PMID 37080222",before:"(官網無論文)",links:[["DOI","https://doi.org/10.1016/S1470-2045(23)00108-0"],["PubMed 37080222","https://pubmed.ncbi.nlm.nih.gov/37080222/"]]},
+  {id:"p52",code:"5-2",txt:"半相合移植 ATG+PTCy GVHD 預防,Int J Hematol 2022。本科陳姿婷第一作者、葉士芃通訊作者。",src:"DOI 10.1007/s12185-021-03280-x,PMID 35226308",before:"(官網無論文)",links:[["DOI","https://doi.org/10.1007/s12185-021-03280-x"],["PubMed 35226308","https://pubmed.ncbi.nlm.nih.gov/35226308/"]]},
+  {id:"p53",code:"5-3",txt:"頭頸鱗癌 Rituximab+化療 Phase I 試驗,BMC Cancer 2022。本科自主主導,謝清昀第一作者、林精湛通訊作者。",src:"DOI 10.1186/s12885-022-09258-0,PMID 35168547",before:"(官網無論文)",links:[["DOI","https://doi.org/10.1186/s12885-022-09258-0"],["PubMed 35168547","https://pubmed.ncbi.nlm.nih.gov/35168547/"]]},
+  {id:"p54",code:"5-4",txt:"Zanidatamab+Tislelizumab Phase Ib/II HER2+ 胃癌,Clin Cancer Res 2026。本科白禮源第二作者。",src:"DOI 10.1158/1078-0432.CCR-24-4295,PMID 41324998;是否為台灣 site PI 請白醫師確認",before:"(官網無論文)",links:[["DOI","https://doi.org/10.1158/1078-0432.CCR-24-4295"],["PubMed 41324998","https://pubmed.ncbi.nlm.nih.gov/41324998/"]]},
+  {id:"p55",code:"5-5",txt:"局部晚期食道鱗癌化療加減放療有效性:全國性 target trial emulation,Anticancer Res 2026。本科林振源第一作者。",src:"DOI 10.21873/anticanres.18217,PMID 42203356",before:"(官網無論文)",links:[["DOI","https://doi.org/10.21873/anticanres.18217"],["PubMed 42203356","https://pubmed.ncbi.nlm.nih.gov/42203356/"]]}
  ]},
  {id:"award",name:"國際認證與獲獎",items:[
-  {id:"a61",code:"6-1",txt:"2026 年通過美國 AABB 細胞治療國際認證(2026 年 2 月公告)。",src:"八家媒體報導一致,2026/2/25"},
-  {id:"a62",code:"6-2",txt:"2026 年入選 Newsweek「Asia-Pacific's Best Specialized Hospitals 2026」Oncology 類,不列名次。",src:"本院 2026/6/18 公告;正式通知函向公關室索取中"},
-  {id:"a63",code:"6-3",txt:"2023 年起為健保署核准施行 CAR-T 細胞治療之醫院。",src:"健保署核准名單報導 2023/11"},
-  {id:"a64",code:"6-x",txt:"國家品質標章「全方位造血幹細胞移植團隊」「建構國際一流血液惡性腫瘤治療中心」:查不到得獎年度與等級,暫不列。科秘查到年度即補入。",src:"snq.org.tw 未能定位年度"}
+  {id:"a61",code:"6-1",txt:"2026 年通過美國 AABB 細胞治療國際認證(2026 年 2 月公告)。",src:"八家媒體報導一致,2026/2/25",before:"(官網特色頁無認證獎項)",links:[["經濟日報 2026/2/25","https://money.udn.com/money/story/5724/9344610"],["ETtoday 2026/2/25","https://www.ettoday.net/news/20260225/3123005.htm"]]},
+  {id:"a62",code:"6-2",txt:"2026 年入選 Newsweek「Asia-Pacific's Best Specialized Hospitals 2026」Oncology 類,不列名次。",src:"本院 2026/6/18 公告;正式通知函向公關室索取中",before:"(官網特色頁無認證獎項)",links:[["本院公告(中)2026/6/18","https://www.cmuh.cmu.edu.tw/NewsInfo/NewsArticle?no=10031"],["本院公告(英)","https://www.cmuh.cmu.edu.tw/NewsInfo/NewsArticle?no=10035"]]},
+  {id:"a63",code:"6-3",txt:"2023 年起為健保署核准施行 CAR-T 細胞治療之醫院。",src:"健保署核准名單報導 2023/11",before:"(官網特色頁無認證獎項)",links:[["健保署核准名單報導 2023/11/3","https://www.healthnews.com.tw/article/59792"]]},
+  {id:"a64",code:"6-x",txt:"國家品質標章「全方位造血幹細胞移植團隊」「建構國際一流血液惡性腫瘤治療中心」:查不到得獎年度與等級,暫不列。科秘查到年度即補入。",src:"snq.org.tw 未能定位年度",before:"官網「引領卓越」頁列有這兩項,未附年度",links:[["官網 引領卓越頁","https://www.cmuh.cmu.edu.tw/Department/Advanced?depid=60"]]}
  ]},
  {id:"other",name:"圖片與就醫指引",items:[
-  {id:"o7",code:"7",txt:"圖片 10/30 另交。規劃三張:移植病房或細胞處理、多專科團隊討論、臨床試驗中心作業,皆不含病人可辨識資訊。",src:"公關室規格 ≥1280×720,英文頁圖內不得有中文字"},
-  {id:"o8",code:"8",txt:"團隊與就醫指引指向官網既有「團隊介紹」「服務項目」頁面,不另寫電話。",src:"官網 depid=60"}
+  {id:"o7",code:"7",txt:"圖片 10/30 另交。規劃三張:移植病房或細胞處理、多專科團隊討論、臨床試驗中心作業,皆不含病人可辨識資訊。",src:"公關室規格 ≥1280×720,英文頁圖內不得有中文字",before:"現有 1 張 特艾1.png,無圖說、解析度不明",links:[]},
+  {id:"o8",code:"8",txt:"團隊與就醫指引指向官網既有「團隊介紹」「服務項目」頁面,不另寫電話。",src:"官網 depid=60",before:"(散在團隊介紹、服務項目頁;特色頁無)",links:[["團隊介紹","https://www.cmuh.cmu.edu.tw/Department/Team?detail=60&current=11&source=dep"],["服務項目","https://www.cmuh.cmu.edu.tw/Department/ServiceItemList?depid=60"]]}
  ]}
 ];
 const ALL=SECS.flatMap(s=>s.items.map(i=>({...i,sec:s.id})));
@@ -189,7 +194,8 @@ function renderStatic(){
     <div class="item" id="it-${it.id}">
       <div class="code">${esc(it.code)}</div>
       <div class="txt">${esc(it.txt)}</div>
-      <div class="src">來源:${esc(it.src)}</div>
+      <div class="src">來源:${esc(it.src)}${(it.links&&it.links.length)?` · ${it.links.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}`:""}</div>
+      ${it.before?`<div class="before" hidden><span class="blab">官網現況(2026-10-18)</span>${esc(it.before)}</div>`:""}
       <div class="acts">
         <button class="btn sm ok" type="button" data-id="${it.id}" data-s="ok" id="ok-${it.id}">✓ 確認無誤</button>
         <button class="btn sm obj" type="button" data-id="${it.id}" data-s="objection">✗ 有異議</button>
@@ -222,6 +228,7 @@ function renderStatic(){
   document.getElementById("confirm-no").addEventListener("click",()=>{ pendingName=null; document.getElementById("confirm").hidden=true; });
   document.getElementById("confirm-yes").addEventListener("click",async e=>{ if(!pendingName) return; await submit("all","endorse","",pendingName,"同仁",e.currentTarget); pendingName=null; document.getElementById("confirm").hidden=true; });
   document.getElementById("csv").addEventListener("click",exportCsv);
+  document.getElementById("togglebefore").addEventListener("click",e=>{ const els=document.querySelectorAll(".before"); const show=els.length&&els[0].hidden; els.forEach(x=>x.hidden=!show); e.currentTarget.textContent= show?"隱藏更正前後對照":"顯示更正前後對照(官網現況 → 更新稿)"; });
 }
 function whoPicker(id,isOk){
   const lead=leadOf(ALL.find(x=>x.id===id).sec);
