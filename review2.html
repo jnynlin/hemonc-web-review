@@ -132,7 +132,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
   <div class="card how" id="how"><span class="eyebrow">給全科同仁</span>這一頁集合了血液腫瘤科這幾年一起累積的成績:造血幹細胞移植、細胞治療、臨床試驗,以及各癌別團隊的照護與研究,每一句都附公開來源。請各位花一分鐘看看自己參與過的部分:<b>主負責人請先逐項按「確認無誤」(10/19 中午前)</b>,把關過的項目會顯示綠色「已確認」;<b>其他同仁接著點右側自己的名字,記錄已閱、同意刊登</b>,有異議就按「有異議」,主負責人回覆後再點名字。這份官網特色介紹將以全科的名義對外呈現;有任何想補強或修正的地方,按「有異議」寫一句即可。論文列名者與移植、細胞治療團隊,也可對自己相關的那一條按確認。</div>
 
   <div id="banner" class="banner" hidden></div>
-  <div class="card me"><span>我是:</span><select id="mesel"><option value="">請選姓名</option></select><span class="r" id="meinfo" style="font-size:13px;color:var(--muted)">選一次就記在這支手機;之後頁首會列出你要處理的事。</span></div>
+  <div class="card me" id="mebar"><span id="meinfo" style="font-size:14px">從右側(手機為下方)點自己的名字,或掃自己的 QR 碼,頁首就會列出你要處理的事。</span><a href="#" id="mechange" style="font-size:13px;color:var(--accent)" hidden>不是我,換人</a></div>
   <div class="todo" id="todo" hidden></div>
 
 
@@ -218,7 +218,7 @@ const OTHER_OK_SECS=new Set(["kpi","pub"]);   // only sections where non-leads h
 const OTHER_OK_HINT={kpi:"團隊成員:確認這項數字與寫法無誤。",pub:"列名作者:確認同意刊出,且自己的角色寫法正確。"};
 let cfg={lead:{},roster:DEFAULT_ROSTER,leadNote:"",notes:{}};
 let ME=null; try{ ME=localStorage.getItem("hemonc_me")||null; }catch(e){}
-function setMe(n){ ME=n||null; try{ if(ME) localStorage.setItem("hemonc_me",ME); else localStorage.removeItem("hemonc_me"); }catch(e){} const sel=document.getElementById("mesel"); if(sel&&sel.value!==(ME||"")) sel.value=ME||""; renderState(); }
+function setMe(n){ ME=n||null; try{ if(ME) localStorage.setItem("hemonc_me",ME); else localStorage.removeItem("hemonc_me"); }catch(e){} renderState(); }
 let rows=[]; let db=null; let pendingName=null;
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -304,7 +304,7 @@ function renderStatic(){
     const wd=e.target.closest("button.withdraw"); if(wd){ const n=wd.dataset.n; await submit("all","ok","點錯名字,撤回已閱",n,"撤回",wd); pendingName=null; renderState(); return; }
     if(no){ pendingName=null; renderState(); return; }
     const card=e.target.closest("button.name"); if(!card) return;
-    pendingName= pendingName===card.dataset.n ? null : card.dataset.n; renderState();
+    pendingName= pendingName===card.dataset.n ? null : card.dataset.n; if(pendingName&&cfg.roster.includes(pendingName)) setMe(pendingName); else renderState();
   });
   document.getElementById("otherlink").addEventListener("click",e=>{ e.preventDefault(); const w=document.getElementById("otherwrap"); w.hidden=!w.hidden; if(!w.hidden) document.getElementById("othername").focus(); });
   document.getElementById("otherbtn").addEventListener("click",async e=>{ const v=document.getElementById("othername").value.trim(); if(!v){ banner("請輸入姓名。",false); return; } await submit("all","endorse","",v,"同仁",e.currentTarget); document.getElementById("othername").value=""; });
@@ -353,7 +353,7 @@ function renderConfig(){
   if(cfg.leadNote){ document.getElementById("how").innerHTML=`<span class="eyebrow">給全科同仁</span>${esc(cfg.leadNote).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")}`; }
   let dl=document.getElementById("roster-list"); if(!dl){ dl=document.createElement("datalist"); dl.id="roster-list"; document.body.appendChild(dl); }
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
-  const ms=document.getElementById("mesel"); ms.innerHTML=`<option value="">請選姓名</option>`+cfg.roster.map(n=>`<option value="${esc(n)}"${n===ME?" selected":""}>${esc(n)}</option>`).join(""); if(!ms.dataset.bound){ ms.dataset.bound="1"; ms.addEventListener("change",()=>setMe(ms.value)); }
+  const mc=document.getElementById("mechange"); if(!mc.dataset.bound){ mc.dataset.bound="1"; mc.addEventListener("click",e=>{ e.preventDefault(); setMe(null); banner("已清除;請點右側自己的名字。",true); }); }
 }
 const tsMs=r=>(r.ts&&r.ts.toMillis)?r.ts.toMillis():Infinity;
 const CORR=new Set(["更正","撤回"]); const NONCOUNT=new Set(["回覆","數字提供","更正","撤回","提問"]);
@@ -403,12 +403,15 @@ function renderState(){
     const mine=leadTodo[ME]||[]; const ment=pendingFor[ME]||[];
     const authored=ALL.filter(it=>it.authors&&it.authors.includes(ME)&&!(byItem[it.id]||[]).some(r=>r.state==="ok"&&r.name===ME&&!r._sup));
     const link=it=>`<a href="#it-${it.id}">${esc(it.code)}</a>`;
-    todoEl.hidden=false; todoEl.innerHTML=
-      `<div class="tcard ${mine.length?"hot":""}"><b>我負責的 ${mine.length?`待確認 ${mine.length}`:"已全部確認"}</b>${mine.length?mine.map(link).join(""):`<span class="r" style="color:var(--muted)">${leads.has(ME)?"沒有待辦":"你不是主負責人"}</span>`}</div>`+
-      `<div class="tcard ${ment.length?"hot":""}"><b>@我 ${ment.length?`${ment.length} 件待回`:"沒有待回"}</b>${ment.length?ment.map(r=>{const it=ALL.find(x=>x.id===r.item); return `<div><a href="#it-${r.item}">${esc(it?it.code:r.item)}</a> ${esc(r.name)}:${esc(r.note.replace(/^@\S+\s+/,"").slice(0,60))}</div>`;}).join(""):""}</div>`+
-      `<div class="tcard ${authored.length?"hot":""}"><b>我列名的論文 ${authored.length?`待確認 ${authored.length}`:"已確認或無"}</b>${authored.map(link).join("")}${endorsers.has(ME)?"":`<div style="margin-top:4px;color:var(--muted)">全案尚未記錄已閱:點右側自己的名字</div>`}</div>`;
-    document.getElementById("meinfo").textContent=`${ME},待辦 ${mine.length+ment.length+authored.length} 件`;
-  } else { todoEl.hidden=true; if(ME) document.getElementById("meinfo").textContent=`「${ME}」不在名單,請重選`; }
+    const cards=[];
+    if(leads.has(ME)) cards.push(`<div class="tcard ${mine.length?"hot":""}"><b>我負責的 ${mine.length?`待確認 ${mine.length}`:"已全部確認"}</b>${mine.map(link).join("")}</div>`);
+    if(ment.length) cards.push(`<div class="tcard hot"><b>@我 ${ment.length} 件待回</b>${ment.map(r=>{const it=ALL.find(x=>x.id===r.item); return `<div><a href="#it-${r.item}">${esc(it?it.code:r.item)}</a> ${esc(r.name)}:${esc(r.note.replace(/^@\S+\s+/,"").slice(0,60))}</div>`;}).join("")}</div>`);
+    if(authored.length) cards.push(`<div class="tcard hot"><b>我列名的論文 待確認 ${authored.length}</b>${authored.map(link).join("")}</div>`);
+    if(!endorsers.has(ME)) cards.push(`<div class="tcard"><b>全案已閱</b><span style="color:var(--muted)">尚未記錄:看完後點右側自己的名字按「是,已閱,同意刊登」</span></div>`);
+    todoEl.hidden=!cards.length; todoEl.innerHTML=cards.join("");
+    const n=mine.length+ment.length+authored.length+(endorsers.has(ME)?0:1);
+    document.getElementById("meinfo").textContent= n?`${ME},待辦 ${n} 件`:`${ME},目前沒有待辦`; document.getElementById("mechange").hidden=false;
+  } else { todoEl.hidden=true; document.getElementById("mechange").hidden=!ME; if(ME) document.getElementById("meinfo").textContent=`「${ME}」不在名單`; }
   const nDone=[...endorsers.keys()].filter(n=>roster.includes(n)).length; const nRead=roster.filter(n=>endorsers.has(n)||objectors.has(n)).length; document.getElementById("names-count").textContent=`同意 ${nDone} · 已閱 ${nRead} / ${roster.length}`;
   const extra=[...endorsers.keys()].filter(n=>!roster.includes(n));
   document.getElementById("s-end").textContent=`${nDone} / ${roster.length}`+(extra.length?` +${extra.length}`:"")+(nRead>nDone?`(另 ${nRead-nDone} 人有異議)`:"");
