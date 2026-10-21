@@ -74,6 +74,7 @@ textarea.note{width:100%;font:inherit;font-size:15px;border:1px solid var(--line
 .names{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .name{font:inherit;font-size:16px;font-weight:500;border:1.5px solid transparent;border-radius:8px;padding:10px 6px;background:var(--wait-bg);color:var(--muted);cursor:pointer;text-align:center;display:grid;gap:2px;position:relative;transition:background .15s,color .15s,border-color .15s}
 .name:hover{border-color:var(--accent);color:var(--ink)}
+.resp.sup{text-decoration:line-through;opacity:.55}.resp.corr{border-left:3px solid var(--accent);padding-left:8px}.fix{margin-left:8px;font-size:12px;color:var(--accent);white-space:nowrap}
 .name small{font-size:11px;font-weight:500;color:var(--muted);min-height:14px}
 .name.lead{background:var(--surface);color:var(--ink);border-color:var(--lead)}
 .name.lead small{color:var(--lead);font-weight:700}
@@ -133,7 +134,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
       <section class="sec" id="names-sec">
         <div class="shead"><h2>全科同仁已閱確認</h2><span class="r" id="names-count"></span></div>
         <div style="padding:12px 16px;display:grid;gap:10px">
-          <div class="r" style="font-size:14px;color:var(--muted)">兩種回應擇一:看完都同意,點自己的名字(變綠);有地方要改,在那一條按「有異議」寫一句,名字會自動變橘,不用再點。主負責人的回覆會出現在那一條下方;你同意了再點名字,橘就轉綠。</div>
+          <div class="r" style="font-size:14px;color:var(--muted)">兩種回應擇一:看完都同意,點自己的名字(變綠);有地方要改,在那一條按「有異議」寫一句,名字會自動變橘,不用再點。寫錯了:在自己那一筆後面按「更正」補一筆,原筆會劃掉;點錯名字則點名字再按「撤回已閱」。主負責人的回覆會出現在那一條下方;你同意了再點名字,橘就轉綠。</div>
           <div class="legend"><span class="l-wait"><i></i>尚未回應</span><span class="l-ok"><i></i>已閱、同意刊登</span><span class="l-obj"><i></i>已閱、有異議待處理</span><span class="l-lead"><i></i>主負責人</span></div>
           <div class="names" id="names"></div>
           <div class="other"><a href="#" id="otherlink" style="color:var(--accent);font-size:14px">名單沒有你?</a><span id="otherwrap" hidden><input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">已閱</button></span></div>
@@ -234,7 +235,7 @@ function renderStatic(){
     </div>`).join("")}</section>`).join("");
   document.getElementById("secs").addEventListener("click",async e=>{
     const b=e.target.closest("button.btn"); if(!b||b.disabled) return;
-    if(FROZEN && !b.classList.contains("reply") && !b.classList.contains("more")){ banner("文字稿已於 10/21 送件,各項目改為唯讀。右側仍可點自己的名字記錄已閱;要更正請在 Teams 告知鄭富銘或郭晉廷醫師。",false); return; }
+    if(FROZEN && !b.classList.contains("reply") && !b.classList.contains("more") && !b.classList.contains("fixsend")){ banner("文字稿已於 10/21 送件,各項目改為唯讀。右側仍可點自己的名字記錄已閱;要更正請在 Teams 告知鄭富銘或郭晉廷醫師。",false); return; }
     const id=b.dataset.id, s=b.dataset.s, it=ALL.find(x=>x.id===id), ta=document.getElementById("nt-"+id), who=document.getElementById("who-"+id);
     if(b.classList.contains("other-ok")){ who.hidden=false; who.innerHTML=whoPicker(id,true); const inp=document.getElementById("whosel-"+id); inp.value=""; inp.focus(); const okb=document.getElementById("ok-"+id); okb.textContent="✓ 以上方姓名送出確認"; okb.dataset.other="1"; return; }
     if(b.classList.contains("reply")){
@@ -265,10 +266,20 @@ function renderStatic(){
     ta.value=""; ta.hidden=true; who.hidden=true; const okb2=document.getElementById("ok-"+id); if(okb2&&okb2.dataset.other){ delete okb2.dataset.other; renderState(); }
   });
   document.getElementById("secs").addEventListener("click",e=>{ const c=e.target.closest("button.whoc"); if(!c) return; const inp=document.getElementById("whosel-"+c.dataset.id); inp.value=c.dataset.n; inp.dispatchEvent(new Event("change")); });
+  document.getElementById("secs").addEventListener("click",async e=>{
+    const a=e.target.closest("a.fix"); const fb=e.target.closest("button.fixsend");
+    if(a){ e.preventDefault(); const id=a.dataset.id, n=a.dataset.n; const ta=document.getElementById("nt-"+id), who=document.getElementById("who-"+id);
+      who.hidden=false; who.innerHTML=`<div class="src" style="margin-bottom:4px">更正自己先前的回應:寫出正確內容後按「送出更正」。原紀錄會保留但劃掉,統計以更正後為準。</div><div>更正人:<b>${esc(n)}</b> <button class="btn sm fixsend" type="button" data-id="${esc(id)}" data-n="${esc(n)}">送出更正</button></div>`;
+      ta.hidden=false; ta.placeholder="寫出正確的內容(例如:確認無誤,先前的異議取消;或:應為 2012 年)"; ta.focus(); return; }
+    if(fb){ const id=fb.dataset.id, n=fb.dataset.n; const ta=document.getElementById("nt-"+id), who=document.getElementById("who-"+id); const note=ta.value.trim();
+      if(!note){ banner("請寫出更正後的內容。",false); ta.focus(); return; }
+      await submit(id,"ok",note,n,"更正",fb); ta.value=""; ta.hidden=true; who.hidden=true; return; }
+  });
 
   document.getElementById("names").addEventListener("click",async e=>{
     const yes=e.target.closest("button.yes"), no=e.target.closest("button.no");
     if(yes){ const n=yes.dataset.n; await submit("all","endorse","",n,"同仁",yes); pendingName=null; renderState(); return; }
+    const wd=e.target.closest("button.withdraw"); if(wd){ const n=wd.dataset.n; await submit("all","ok","點錯名字,撤回已閱",n,"撤回",wd); pendingName=null; renderState(); return; }
     if(no){ pendingName=null; renderState(); return; }
     const card=e.target.closest("button.name"); if(!card) return;
     pendingName= pendingName===card.dataset.n ? null : card.dataset.n; renderState();
@@ -316,31 +327,37 @@ function renderConfig(){
   let dl=document.getElementById("roster-list"); if(!dl){ dl=document.createElement("datalist"); dl.id="roster-list"; document.body.appendChild(dl); }
   dl.innerHTML=cfg.roster.map(n=>`<option value="${esc(n)}">`).join("");
 }
+const tsMs=r=>(r.ts&&r.ts.toMillis)?r.ts.toMillis():Infinity;
+const CORR=new Set(["更正","撤回"]); const NONCOUNT=new Set(["回覆","數字提供","更正","撤回"]);
 function renderState(){
+  const corr=rows.filter(r=>CORR.has(r.role));
+  for(const r of rows){ r._sup = !CORR.has(r.role) && r.role!=="回覆" && corr.some(c=>c.name===r.name && c.item===r.item && tsMs(c)>tsMs(r)); }
   const byItem={}; const endorsers=new Map(); const objectors=new Map();
-  for(const r of rows){ if(r.item==="all"&&r.state==="endorse"){ if(!endorsers.has(r.name)) endorsers.set(r.name,r); continue; } if(r.state==="objection"){ objectors.set(r.name,(objectors.get(r.name)||0)+1); } (byItem[r.item]=byItem[r.item]||[]).push(r); }
+  for(const r of rows){ if(r.item==="all"){ if(r.state==="endorse"&&!r._sup){ if(!endorsers.has(r.name)) endorsers.set(r.name,r); } continue; } if(r.state==="objection"&&!r._sup){ objectors.set(r.name,(objectors.get(r.name)||0)+1); } (byItem[r.item]=byItem[r.item]||[]).push(r); }
   let okItems=0,objItems=0; const objList=[]; const secStat={};
   for(const it of ALL){
     const list=byItem[it.id]||[]; const lead=leadOf(it.sec);
-    const leadOk=list.some(r=>r.state==="ok"&&r.role!=="回覆"&&r.role!=="數字提供"&&(!lead||r.name===lead));
+    const leadOk=list.some(r=>r.state==="ok"&&!r._sup&&!NONCOUNT.has(r.role)&&(!lead||r.name===lead));
     const replies=list.filter(r=>r.state==="ok"&&r.role==="回覆");
-    const nOk=list.filter(r=>r.state==="ok"&&r.role!=="回覆"&&r.role!=="數字提供").length, nObj=list.filter(r=>r.state==="objection").length;
+    const nOk=list.filter(r=>r.state==="ok"&&!r._sup&&!NONCOUNT.has(r.role)).length, nObj=list.filter(r=>r.state==="objection"&&!r._sup).length;
     const rpb=document.getElementById("rp-"+it.id); if(rpb){ rpb.hidden=!nObj; }
-    if(nObj){ objItems++; list.filter(r=>r.state==="objection").forEach(r=>objList.push({it,r})); } else if(leadOk) okItems++;
+    if(nObj){ objItems++; list.filter(r=>r.state==="objection"&&!r._sup).forEach(r=>objList.push({it,r})); } else if(leadOk) okItems++;
     secStat[it.sec]=secStat[it.sec]||{n:0,ok:0,obj:0}; secStat[it.sec].n++; if(leadOk&&!nObj) secStat[it.sec].ok++; if(nObj) secStat[it.sec].obj++;
     const okb=document.getElementById("ok-"+it.id); if(it.id!=="k45"){ okb.classList.toggle("done",leadOk&&!nObj); if(lead){ okb.textContent= leadOk ? `✓ ${lead} 已確認` : `✓ ${lead} 確認無誤`; } } else { okb.classList.toggle("done",nOk>0); }
     document.getElementById("tl-"+it.id).innerHTML=(nOk?`<span class="chip ok">確認 ${nOk}</span>`:"")+(nObj?`<span class="chip obj">異議 ${nObj}${replies.length?` · 已回覆 ${replies.length}`:""}</span>`:"")+(!nOk&&!nObj&&!replies.length?`<span class="chip">尚無回應</span>`:"");
     const rs=document.getElementById("rs-"+it.id); rs.innerHTML="";
     const objs=list.filter(r=>r.state==="objection"), oks=list.filter(r=>r.state!=="objection");
     const showAll=rs.dataset.all==="1"; const okShow= showAll? oks : oks.slice(-3);
-    for(const r of [...objs,...okShow]){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":""); d.className+= r.role==="回覆"?" reply":""; d.textContent=`${r.name}(${r.role}) · ${r.state==="ok"?(r.role==="數字提供"?"提供數字":r.role==="回覆"?"回覆":"確認無誤"):"有異議"}${r.note?":"+r.note:""} · ${fmt(r.ts)}`; rs.appendChild(d); }
+    for(const r of [...objs,...okShow]){ const d=document.createElement("div"); d.className="resp"+(r.state==="objection"?" obj":"")+(r.role==="回覆"?" reply":"")+(r._sup?" sup":"")+(CORR.has(r.role)?" corr":"");
+      const label= r.state==="ok"?(r.role==="數字提供"?"提供數字":r.role==="回覆"?"回覆":r.role==="更正"?"更正":r.role==="撤回"?"撤回":"確認無誤"):"有異議";
+      d.innerHTML=`${esc(r.name)}(${esc(r.role)}) · ${label}${r.note?":"+esc(r.note):""} · ${fmt(r.ts)}${(!r._sup&&!CORR.has(r.role)&&r.role!=="回覆")?` <a href="#" class="fix" data-id="${esc(it.id)}" data-n="${esc(r.name)}" title="本人寫錯了,補一筆更正">更正</a>`:""}`; rs.appendChild(d); }
     if(oks.length>3){ const t=document.createElement("button"); t.type="button"; t.className="btn sm more"; t.textContent= showAll? "收合確認紀錄" : `顯示全部 ${oks.length} 筆確認`; t.addEventListener("click",()=>{ rs.dataset.all= showAll?"0":"1"; renderState(); }); rs.appendChild(t); }
   }
   const roster=cfg.roster; const leads=new Set(Object.values(cfg.lead||{}).filter(Boolean));
   const leadTodo={};   // 主負責人 → 尚未確認的項目
-  for(const it of ALL){ const lead=leadOf(it.sec); if(!lead||it.id==="k45") continue; const list=byItem[it.id]||[]; const ok=list.some(r=>r.state==="ok"&&r.name===lead&&r.role!=="回覆"); if(!ok) (leadTodo[lead]=leadTodo[lead]||[]).push(it); }
+  for(const it of ALL){ const lead=leadOf(it.sec); if(!lead||it.id==="k45") continue; const list=byItem[it.id]||[]; const ok=list.some(r=>r.state==="ok"&&r.name===lead&&!r._sup&&!NONCOUNT.has(r.role)); if(!ok) (leadTodo[lead]=leadTodo[lead]||[]).push(it); }
   document.getElementById("names").innerHTML=roster.map(n=>{ const e=endorsers.get(n); const isLead=leads.has(n); const asking=pendingName===n; const todo=leadTodo[n]||[];
-    if(asking) return `<div class="name asking" data-n="${esc(n)}"><span>以「${esc(n)}」的名義記錄:本人已閱上列刊登內容,同意刊登${e?"(已確認過,再記一次)":""}</span>${isLead&&todo.length?`<span class="src" style="display:block;margin:4px 0">主負責人待確認 ${todo.length} 項:${todo.map(it=>`<a href="#it-${it.id}" style="color:var(--accent);margin-right:6px">${esc(it.code)}</a>`).join("")}</span>`:""}<span class="ask"><button class="yes" type="button" data-n="${esc(n)}">是,已閱,同意刊登</button><button class="no" type="button">取消</button></span></div>`;
+    if(asking) return `<div class="name asking" data-n="${esc(n)}"><span>以「${esc(n)}」的名義記錄:本人已閱上列刊登內容,同意刊登${e?"(已確認過,再記一次)":""}</span>${isLead&&todo.length?`<span class="src" style="display:block;margin:4px 0">主負責人待確認 ${todo.length} 項:${todo.map(it=>`<a href="#it-${it.id}" style="color:var(--accent);margin-right:6px">${esc(it.code)}</a>`).join("")}</span>`:""}<span class="ask"><button class="yes" type="button" data-n="${esc(n)}">是,已閱,同意刊登</button>${e?`<button class="withdraw" type="button" data-n="${esc(n)}" style="background:var(--surface2);color:var(--ink)">點錯了,撤回已閱</button>`:""}<button class="no" type="button">取消</button></span></div>`;
     const ob=!e&&objectors.get(n);
     return `<button class="name ${e?"done":ob?"objected":""} ${isLead?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}<small>${e?"✓ "+fmt(e.ts):ob?`已閱・有異議 ${ob}`:(isLead?(todo.length?`主負責人・待確認 ${todo.length}`:"主負責人・已全確認"):(cfg.notes&&cfg.notes[n])?esc(cfg.notes[n]):"")}</small></button>`; }).join("");
   const nDone=[...endorsers.keys()].filter(n=>roster.includes(n)).length; const nRead=roster.filter(n=>endorsers.has(n)||objectors.has(n)).length; document.getElementById("names-count").textContent=`同意 ${nDone} · 已閱 ${nRead} / ${roster.length}`;
@@ -366,7 +383,7 @@ fetch("config.json?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null
 try{
   const app=initializeApp({apiKey:"AIzaSyB12T-DIgrwzPQQJjF3SvkjKnRYy0CxTd8",authDomain:"assistant-hub-cmuh.firebaseapp.com",projectId:"assistant-hub-cmuh",appId:"1:704995456524:web:111c2db8d85a073c8f2029"});
   db=getFirestore(app);
-  onSnapshot(query(collection(db,"web_review"),where("page","==",PAGE)),snap=>{ rows=snap.docs.map(d=>d.data()).filter(r=>r.page===PAGE).sort((a,b)=>((a.ts&&a.ts.toMillis?a.ts.toMillis():Infinity)-(b.ts&&b.ts.toMillis?b.ts.toMillis():Infinity))); renderState(); },
+  onSnapshot(query(collection(db,"web_review"),where("page","==",PAGE)),snap=>{ rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.page===PAGE).sort((a,b)=>((a.ts&&a.ts.toMillis?a.ts.toMillis():Infinity)-(b.ts&&b.ts.toMillis?b.ts.toMillis():Infinity))); renderState(); },
     err=>{ banner("讀取回應失敗:"+(err.code||err.message)+"。可照常閱讀內容;有意見請回信。",false); });
 }catch(e){ banner("資料庫未載入,可照常閱讀內容;有意見請回信。",false); }
 </script>
