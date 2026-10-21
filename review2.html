@@ -377,7 +377,7 @@ const tsMs=r=>(r.ts&&r.ts.toMillis)?r.ts.toMillis():Infinity;
 const CORR=new Set(["更正","撤回"]); const NONCOUNT=new Set(["回覆","數字提供","更正","撤回","提問"]);
 function renderState(){
   const corr=rows.filter(r=>CORR.has(r.role));
-  for(const r of rows){ r._sup = !CORR.has(r.role) && r.role!=="回覆" && corr.some(c=>c.name===r.name && c.item===r.item && tsMs(c)>tsMs(r)); }
+  for(const r of rows){ r._sup = !CORR.has(r.role) && r.role!=="回覆" && corr.some(c=>c!==r && c.name===r.name && c.item===r.item && tsMs(c)>=tsMs(r)); }   // 同一瞬間以更正/撤回為準
   const byItem={}; const endorsers=new Map(); const objectors=new Map(); const openObj=new Map(); const partic=new Map();
   const repliedItemsAll=new Set(rows.filter(r=>r.role==="回覆"&&!r._sup).map(r=>r.item));
   for(const r of rows){ if(r.item==="all"){ if(r.state==="endorse"&&!r._sup){ if(!endorsers.has(r.name)) endorsers.set(r.name,r); } continue; }
