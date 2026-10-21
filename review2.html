@@ -94,6 +94,7 @@ textarea.note{width:100%;font:inherit;font-size:15px;border:1px solid var(--line
 .name.lead small{color:var(--lead);font-weight:700}
 .name.done{background:var(--ok-strong);border-color:var(--ok-strong);color:#fff;font-weight:700}
 .name.done small{color:rgba(255,255,255,.85);font-weight:500}
+.name.meme{box-shadow:0 0 0 2px var(--accent) inset}
 .name.part{background:var(--surface);border-color:var(--accent);color:var(--ink);font-weight:700}
 .name.part small{color:var(--accent);font-weight:600}
 .legend .l-part i{background:var(--surface);border-color:var(--accent);border-width:2px}
@@ -153,7 +154,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
       <section class="sec" id="names-sec">
         <div class="shead"><h2>全科同仁已閱確認</h2><span class="r" id="names-count"></span></div>
         <div style="padding:12px 16px;display:grid;gap:10px">
-          <div class="r" style="font-size:14px;color:var(--muted)">點名字的意思是「我看過 8 區塊全部內容,同意以全科名義刊登」,一下完成(變綠,15 秒內可復原)。只對個別項目確認、提供數字或回覆過的人會顯示「已參與」,看完全文請再點一次名字;有地方要改,在那一條按「有異議」寫一句,名字會自動變橘,不用再點。寫錯了:在自己那一筆後面按「更正」補一筆,原筆會劃掉;點錯名字則點名字再按「撤回已閱」。要交給某人處理:寫異議或提問時選「交給誰」,對方名字會亮「待你處理」。主負責人的回覆會出現在那一條下方;你同意了再點名字,橘就轉綠。</div>
+          <div class="r" style="font-size:14px;color:var(--muted)">點自己的名字:第一下只是認人、列出待辦,不寫入;再點一下才記錄「我看過 8 區塊全部內容,同意以全科名義刊登」(變綠,15 秒內可復原)。掃 QR 或由個人連結進來的人已認人,點一下就完成。只對個別項目確認、提供數字或回覆過的人會顯示「已參與」,看完全文請再點一次名字;有地方要改,在那一條按「有異議」寫一句,名字會自動變橘,不用再點。寫錯了:在自己那一筆後面按「更正」補一筆,原筆會劃掉;點錯名字則點名字再按「撤回已閱」。要交給某人處理:寫異議或提問時選「交給誰」,對方名字會亮「待你處理」。主負責人的回覆會出現在那一條下方;你同意了再點名字,橘就轉綠。</div>
           <div class="legend"><span class="l-wait"><i></i>尚未回應</span><span class="l-ok"><i></i>已閱、同意刊登</span><span class="l-part"><i></i>已參與(對個別項目確認/提供/回覆,尚未點同意全案)</span><span class="l-obj"><i></i>有異議待處理</span><span class="l-lead"><i></i>主負責人</span></div>
           <div class="names" id="names"></div>
           <div class="other"><a href="#" id="otherlink" style="color:var(--accent);font-size:14px">名單沒有你?</a><span id="otherwrap" hidden><input id="othername" placeholder="輸入姓名" autocomplete="off"><button class="btn sm" id="otherbtn" type="button">已閱</button></span></div>
@@ -311,10 +312,10 @@ function renderStatic(){
     const card=e.target.closest("button.name"); if(!card) return;
     const n=card.dataset.n; if(!cfg.roster.includes(n)) return;
     const already=rows.find(r=>r.item==="all"&&r.state==="endorse"&&r.name===n&&!r._sup);
-    setMe(n);
-    if(already){ banner(`${n}:已於 ${fmt(already.ts)} 記錄已閱;上方列出你還要處理的事。`,true,{label:"點錯名字,撤回已閱",fn:async()=>{ await submit("all","ok","點錯名字,撤回已閱",n,"撤回",card); }}); return; }
-    await submit("all","endorse","",n,"同仁",card);
-    banner(`已記錄:${n} 已閱上列 8 區塊全部內容,同意以全科名義刊登。`,true,{label:"不是我,復原",fn:async()=>{ await submit("all","ok","點錯名字,撤回已閱",n,"撤回",card); setMe(null); }});
+    if(already){ setMe(n); banner(`${n}:已於 ${fmt(already.ts)} 記錄同意全案;上方列出你還要處理的事。`,true,{label:"點錯名字,撤回",fn:async()=>{ await submit("all","ok","點錯名字,撤回已閱",n,"撤回",card); }}); return; }
+    if(ME!==n){ setMe(n); banner(`你是 ${n}。上方列出你要處理的事;看完 8 區塊內容後,再點一次自己的名字即記錄「同意全案刊登」。`,true,{label:"不是我",fn:async()=>{ setMe(null); banner("已清除。",true); }}); return; }   // 第一下:認人,不寫入
+    await submit("all","endorse","",n,"同仁",card);                                                                                                                             // 第二下(或 QR/深連結已認人):同意全案
+    banner(`已記錄:${n} 已閱上列 8 區塊全部內容,同意以全科名義刊登。`,true,{label:"點錯了,復原",fn:async()=>{ await submit("all","ok","點錯名字,撤回已閱",n,"撤回",card); }});
   });
   document.getElementById("otherlink").addEventListener("click",e=>{ e.preventDefault(); const w=document.getElementById("otherwrap"); w.hidden=!w.hidden; if(!w.hidden) document.getElementById("othername").focus(); });
   document.getElementById("otherbtn").addEventListener("click",async e=>{ const v=document.getElementById("othername").value.trim(); if(!v){ banner("請輸入姓名。",false); return; } await submit("all","endorse","",v,"同仁",e.currentTarget); document.getElementById("othername").value=""; });
@@ -416,6 +417,7 @@ function renderState(){
     else if(pp){ cls="part"; const parts=[pp.ok?`確認 ${pp.ok}`:"",pp.num?"提供數字":"",pp.rep?"已回覆":"",pp.q?"提問":""].filter(Boolean).join("・"); small=`已參與(${parts})・尚未點同意全案`; }
     else if(isLead){ cls="lead"; small= todo.length?`主負責人・待確認 ${todo.length}`:"主負責人・已全確認"; }
     else small=(cfg.notes&&cfg.notes[n])?esc(cfg.notes[n]):"";
+    if(n===ME&&!e){ cls+=" meme"; small=(small?small+"・":"")+"再點一下=同意全案"; }
     return `<button class="name ${cls} ${isLead&&!e?"lead":""}" type="button" data-n="${esc(n)}">${esc(n)}${badge}<small>${small}</small></button>`; }).join("");
   // 我的待辦
   const todoEl=document.getElementById("todo");
