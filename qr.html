@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>覆核頁 個人 QR 碼</title>
+<style>
+@page{size:A4;margin:12mm}
+body{margin:0;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;color:#1b272d;background:#fff;padding:16px}
+h1{font-size:18px;margin:0 0 4px}.sub{font-size:12.5px;color:#5b6b72;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}}
+.c{border:1px solid #cfd8d4;border-radius:8px;padding:10px;text-align:center;break-inside:avoid}
+.c b{display:block;font-size:16px;margin-bottom:6px}.c small{display:block;font-size:11px;color:#5b6b72;margin-top:6px;word-break:break-all}
+.qr{display:inline-block;width:140px;height:140px}
+.qr img,.qr canvas{width:140px!important;height:140px!important}
+@media print{body{padding:0}.noprint{display:none}}
+</style></head><body>
+<h1>血液腫瘤科 官網特色醫療 覆核頁:個人 QR 碼</h1>
+<p class="sub">掃自己的碼,頁面會自動帶入姓名並列出你要處理的事;按一下即記錄已閱。列印貼於科辦,或截圖私訊。<span class="noprint">(此頁不含任何個人資料,只有姓名與連結)</span></p>
+<div class="grid" id="g"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const BASE="https://jnynlin.github.io/hemonc-web-review/review2.html";
+fetch("config.json?v="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(j=>{
+  const roster=j.roster||[]; const g=document.getElementById("g");
+  for(const n of roster){ const url=`${BASE}?name=${encodeURIComponent(n)}`; const d=document.createElement("div"); d.className="c"; d.innerHTML=`<b>${n}</b><div class="qr" id="q-${n}"></div><small>${url}</small>`; g.appendChild(d); new QRCode(document.getElementById("q-"+n),{text:url,width:140,height:140,correctLevel:QRCode.CorrectLevel.M}); }
+}).catch(()=>{ document.getElementById("g").textContent="config.json 讀取失敗"; });
+</script>
+</body></html>
