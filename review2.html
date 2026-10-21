@@ -373,7 +373,7 @@ function renderState(){
   const byItem={}; const endorsers=new Map(); const objectors=new Map(); const openObj=new Map(); const partic=new Map();
   const repliedItemsAll=new Set(rows.filter(r=>r.role==="回覆"&&!r._sup).map(r=>r.item));
   for(const r of rows){ if(r.item==="all"){ if(r.state==="endorse"&&!r._sup){ if(!endorsers.has(r.name)) endorsers.set(r.name,r); } continue; }
-    if(r.state==="objection"&&!r._sup){ objectors.set(r.name,(objectors.get(r.name)||0)+1); if(!repliedItemsAll.has(r.item)) openObj.set(r.name,(openObj.get(r.name)||0)+1); }
+    if(r.state==="objection"&&!r._sup){ objectors.set(r.name,(objectors.get(r.name)||0)+1); const answered=rows.some(x=>x.item===r.item&&x.role==="回覆"&&!x._sup&&tsMs(x)>tsMs(r)); if(!answered) openObj.set(r.name,(openObj.get(r.name)||0)+1); }
     if(!r._sup&&!CORR.has(r.role)){ const pp=partic.get(r.name)||{ok:0,num:0,rep:0,q:0,last:r}; if(r.state==="ok"&&r.role==="數字提供") pp.num++; else if(r.role==="回覆") pp.rep++; else if(r.role==="提問") pp.q++; else if(r.state==="ok") pp.ok++; if(tsMs(r)>=tsMs(pp.last)) pp.last=r; partic.set(r.name,pp); }
     (byItem[r.item]=byItem[r.item]||[]).push(r); }
   let okItems=0,objItems=0; const objList=[]; const secStat={};
@@ -437,8 +437,7 @@ function renderState(){
   document.getElementById("s-end").textContent=`${nDone} / ${roster.length}`+(extra.length?` +${extra.length}`:"")+(nPart?`(另 ${nPart} 人已參與未點同意)`:"");
   document.getElementById("s-ok").textContent=`${okItems} / ${ALL.length}`;
   document.getElementById("s-obj").textContent=objItems;
-  const repliedItems=new Set(rows.filter(r=>r.role==="回覆").map(r=>r.item));
-  const pend=objList.filter(({it})=>!repliedItems.has(it.id));
+  const pend=objList.filter(({it,r})=>!rows.some(x=>x.item===it.id&&x.role==="回覆"&&!x._sup&&tsMs(x)>tsMs(r)));
   const byLead={}; for(const x of pend){ const l=leadOf(x.it.sec)||"(未指定)"; (byLead[l]=byLead[l]||[]).push(x); }
   document.getElementById("st-pendobj").innerHTML= pend.length? Object.entries(byLead).map(([l,arr])=>`<div><b>${esc(l)}</b>:${arr.map(({it,r})=>`${esc(it.code)}(${esc(r.name)})`).join("、")}</div>`).join("") : "無";
   document.getElementById("st-obj").innerHTML= objList.length? objList.map(({it,r})=>`<div class="resp obj">${esc(it.code)} ${esc(r.name)}:${esc(r.note)} · ${fmt(r.ts)}</div>`).join("") : "無";
