@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; connect-src 'self' https://firestore.googleapis.com https://*.googleapis.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>血液腫瘤科 官網特色醫療 刊登內容覆核</title>
@@ -156,7 +157,7 @@ table.stat th{font-size:12px;color:var(--muted);letter-spacing:.04em;border-top:
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const PAGE="hemonc-feature-2026";
 const DEADLINE="2026-10-21T12:00:00+08:00";
@@ -347,7 +348,7 @@ fetch("config.json?v="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null
 try{
   const app=initializeApp({apiKey:"AIzaSyB12T-DIgrwzPQQJjF3SvkjKnRYy0CxTd8",authDomain:"assistant-hub-cmuh.firebaseapp.com",projectId:"assistant-hub-cmuh",appId:"1:704995456524:web:111c2db8d85a073c8f2029"});
   db=getFirestore(app);
-  onSnapshot(query(collection(db,"web_review"),orderBy("ts","asc")),snap=>{ rows=snap.docs.map(d=>d.data()).filter(r=>r.page===PAGE); renderState(); },
+  onSnapshot(query(collection(db,"web_review"),where("page","==",PAGE)),snap=>{ rows=snap.docs.map(d=>d.data()).filter(r=>r.page===PAGE).sort((a,b)=>((a.ts&&a.ts.toMillis?a.ts.toMillis():Infinity)-(b.ts&&b.ts.toMillis?b.ts.toMillis():Infinity))); renderState(); },
     err=>{ banner("讀取回應失敗:"+(err.code||err.message)+"。可照常閱讀內容;有意見請回信。",false); });
 }catch(e){ banner("資料庫未載入,可照常閱讀內容;有意見請回信。",false); }
 </script>
