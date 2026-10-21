@@ -224,8 +224,9 @@ const ALL=SECS.flatMap(s=>s.items.map(i=>({...i,sec:s.id})));
 const OTHER_OK_SECS=new Set(["kpi","pub"]);   // only sections where non-leads have standing: trial/transplant teams, listed authors
 const OTHER_OK_HINT={kpi:"團隊成員:確認這項數字與寫法無誤。",pub:"列名作者:確認同意刊出,且自己的角色寫法正確。"};
 let cfg={lead:{},roster:DEFAULT_ROSTER,leadNote:"",notes:{}};
-let ME=null; try{ ME=localStorage.getItem("hemonc_me")||null; }catch(e){}
-function setMe(n){ ME=n||null; try{ if(ME) localStorage.setItem("hemonc_me",ME); else localStorage.removeItem("hemonc_me"); }catch(e){} renderState(); }
+let ME=null;   // 身分只記在這個瀏覽器,30 天後自動忘記;共用電腦請用「換人」
+try{ const raw=localStorage.getItem("hemonc_me"); if(raw){ const o=raw.startsWith("{")?JSON.parse(raw):{name:raw,at:0}; if(o.at && Date.now()-o.at<30*864e5) ME=o.name; else localStorage.removeItem("hemonc_me"); } }catch(e){}
+function setMe(n){ ME=n||null; try{ if(ME) localStorage.setItem("hemonc_me",JSON.stringify({name:ME,at:Date.now()})); else localStorage.removeItem("hemonc_me"); }catch(e){} renderState(); }
 let rows=[]; let db=null; let pendingName=null;
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
