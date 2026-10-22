@@ -229,7 +229,7 @@ try{ const raw=localStorage.getItem("hemonc_me"); if(raw){ const o=raw.startsWit
 function setMe(n){ ME=n||null; try{ if(ME) localStorage.setItem("hemonc_me",JSON.stringify({name:ME,at:Date.now()})); else localStorage.removeItem("hemonc_me"); }catch(e){} renderState(); }
 let rows=[]; let db=null; let pendingName=null;
 
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function banner(msg,ok,action){ const b=document.getElementById("banner"); b.textContent=msg; b.className="banner"+(ok?" ok":""); b.hidden=!msg;
   if(action){ const bt=document.createElement("button"); bt.type="button"; bt.className="btn sm"; bt.style.marginLeft="10px"; bt.textContent=action.label; bt.addEventListener("click",async()=>{ bt.disabled=true; await action.fn(); }); b.appendChild(bt); }
   if(msg){ clearTimeout(banner._t); if(!action) banner._t=setTimeout(()=>{ if(b.textContent.startsWith(msg)) b.hidden=true; }, 6000); try{ b.scrollIntoView({behavior:"smooth",block:"nearest"}); }catch(err){} } }

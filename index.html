@@ -203,7 +203,7 @@ const OTHER_OK_HINT={kpi:"團隊成員:確認這項數字與寫法無誤。",pub
 let cfg={lead:{},roster:DEFAULT_ROSTER,leadNote:"",notes:{}};
 let rows=[]; let db=null; let pendingName=null;
 
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function banner(msg,ok){ const b=document.getElementById("banner"); b.textContent=msg; b.className="banner"+(ok?" ok":""); b.hidden=!msg; }
 const FROZEN=true;   // 10/21 送件後:項目唯讀(確認/異議/提供數字停用),已閱與主負責人回覆仍可用
 const MILESTONES=[["2026-10-21","已送件(第一次提交)"],["2026-10-23","公關室回覆"],["2026-10-30","第二次提交:照片、圖說、補件"],["2026-11-06","初步上架"],["2026-11-13","完成上架"]];
